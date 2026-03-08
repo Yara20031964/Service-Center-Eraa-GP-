@@ -1,0 +1,6 @@
+@KHDMA.API_HostAddress = http://localhost:5283
+
+GET {{KHDMA.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
