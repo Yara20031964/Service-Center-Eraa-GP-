@@ -1,3 +1,4 @@
+using Application.Services.Admin;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Domain.Entities;
 using KHDMA.Infrastructure.Data;
@@ -14,7 +15,9 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
  builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddScoped<IAdminCustomerService, AdminCustomerService>();
+builder.Services.AddScoped<IAdminProviderService, AdminProviderService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 var app = builder.Build();
 
 app.UseSwagger();
