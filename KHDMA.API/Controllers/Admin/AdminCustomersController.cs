@@ -27,32 +27,32 @@ public class AdminCustomersController : ControllerBase
     }
 
     // GET api/admin/users/customers/5
-    [HttpGet("customers/{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("customers/{id}")]
+    public async Task<IActionResult> GetById(string id)
     {
         var result = await _service.GetCustomerByIdAsync(id);
         return StatusCode(result.StatusCode, result);
     }
 
     // PUT api/admin/users/customers/5/suspend
-    [HttpPut("customers/{id:int}/suspend")]
-    public async Task<IActionResult> Suspend(int id)
+    [HttpPut("customers/{id}/suspend")]
+    public async Task<IActionResult> Suspend(string id)
     {
         var result = await _service.SuspendCustomerAsync(id);
         return StatusCode(result.StatusCode, result);
     }
 
     // PUT api/admin/users/customers/5/ban
-    [HttpPut("customers/{id:int}/ban")]
-    public async Task<IActionResult> Ban(int id)
+    [HttpPut("customers/{id}/ban")]
+    public async Task<IActionResult> Ban(string id)
     {
         var result = await _service.BanCustomerAsync(id);
         return StatusCode(result.StatusCode, result);
     }
 
     // PUT api/admin/users/customers/5/restore
-    [HttpPut("customers/{id:int}/restore")]
-    public async Task<IActionResult> Restore(int id)
+    [HttpPut("customers/{id}/restore")]
+    public async Task<IActionResult> Restore(string id)
     {
         var result = await _service.RestoreCustomerAsync(id);
         return StatusCode(result.StatusCode, result);

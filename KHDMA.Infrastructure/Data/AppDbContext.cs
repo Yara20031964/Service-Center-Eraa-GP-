@@ -133,6 +133,16 @@ namespace KHDMA.Infrastructure.Data
                 .HasOne(n => n.User)
                 .WithMany(u => u.Notifications)
                 .HasForeignKey(n => n.UserId);
+            modelBuilder.Entity<CommissionSettings>().HasData(
+                new CommissionSettings
+                {
+                    Id = 1,
+                    Rate = 0.15m,
+                    LastUpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "system"
+                }
+            );
+
         }
     }
 }

@@ -13,11 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KHDMA.Domain\KHDMA.Domain.csproj" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Migrations\" />
+    <ProjectReference Include="..\KHDMA.Application\KHDMA.Application.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

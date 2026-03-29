@@ -17,8 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KHDMA.Application\KHDMA.Application.csproj" />
-    <ProjectReference Include="..\KHDMA.Domain\KHDMA.Domain.csproj" />
     <ProjectReference Include="..\KHDMA.Infrastructure\KHDMA.Infrastructure.csproj" />
   </ItemGroup>
 

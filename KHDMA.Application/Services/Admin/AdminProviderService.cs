@@ -1,35 +1,35 @@
 ﻿using Application.DTOs.Admin;
 using Domain.Common;
+using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Domain.Entities;
-using KHDMA.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using KHDMA.Domain.Enums;
 
 namespace Application.Services.Admin;
 
 public class AdminProviderService : IAdminProviderService
 {
-    private readonly AppDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AdminProviderService(AppDbContext context)
+    public AdminProviderService(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
-    // ── PENDING APPLICATIONS ──────────────────────────────────
     public async Task<PagedResponse<ProviderApplicationDto>> GetPendingApplicationsAsync(
         int page, int pageSize)
     {
-        var query = _context.Users
-            .Include(u => u.Provider)
-            .Where(u => u.Role == UserRole.Provider &&
-                        u.Provider != null &&
-                        u.Provider.State == ProviderState.Pending &&
-                        !u.IsDeleted);
+        var all = await _unitOfWork.Repository<ApplicationUser>()
+            .GetAsync(
+                u => u.Role == UserRole.Provider &&
+                     u.Provider != null &&
+                     u.Provider.State == ProviderState.Pending &&
+                     !u.IsDeleted,
+                includes: [u => u.Provider!],
+                tracked: false);
 
-        var totalCount = await query.CountAsync();
+        var totalCount = all.Count();
 
-        var items = await query
+        var items = all
             .OrderBy(u => u.CreateAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -42,23 +42,21 @@ public class AdminProviderService : IAdminProviderService
                 ServiceArea = u.Provider!.ServiceArea,
                 HourlyRate = u.Provider.HourlyRate ?? 0,
                 CreatedAt = u.CreateAt
-            })
-            .ToListAsync();
+            });
 
         return PagedResponse<ProviderApplicationDto>.Ok(items, totalCount, page, pageSize);
     }
 
-    // ── APPROVE / REJECT ──────────────────────────────────────
     public async Task<ApiResponse<string>> ApproveOrRejectApplicationAsync(
         string id, ApproveRejectDto dto)
     {
-        var user = await _context.Users
-            .Include(u => u.Provider)
-            .FirstOrDefaultAsync(u =>
-                u.Id == id &&
-                u.Role == UserRole.Provider &&
-                u.Provider!.State == ProviderState.Pending &&
-                !u.IsDeleted);
+        var user = await _unitOfWork.Repository<ApplicationUser>()
+            .GetOneAsync(
+                u => u.Id == id &&
+                     u.Role == UserRole.Provider &&
+                     u.Provider!.State == ProviderState.Pending &&
+                     !u.IsDeleted,
+                includes: [u => u.Provider!]);
 
         if (user is null)
             return ApiResponse<string>.NotFound("Pending provider application not found");
@@ -74,7 +72,8 @@ public class AdminProviderService : IAdminProviderService
             user.Status = UserStatus.Banned;
         }
 
-        await _context.SaveChangesAsync();
+        _unitOfWork.Repository<ApplicationUser>().Update(user);
+        await _unitOfWork.CommitAsync();
 
         return ApiResponse<string>.Ok(
             dto.IsApproved
@@ -82,26 +81,25 @@ public class AdminProviderService : IAdminProviderService
                 : $"Provider application rejected — {dto.Reason ?? "no reason provided"}");
     }
 
-    // ── GET ALL ACTIVE PROVIDERS ──────────────────────────────
     public async Task<PagedResponse<ProviderDto>> GetAllProvidersAsync(
         string? search, int page, int pageSize)
     {
-        var query = _context.Users
-            .Include(u => u.Provider)
-            .Where(u => u.Role == UserRole.Provider &&
-                        u.Provider!.State == ProviderState.Active &&
-                        !u.IsDeleted);
+        var all = await _unitOfWork.Repository<ApplicationUser>()
+            .GetAsync(
+                u => u.Role == UserRole.Provider &&
+                     u.Provider!.State == ProviderState.Active &&
+                     !u.IsDeleted,
+                includes: [u => u.Provider!],
+                tracked: false);
 
         if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(u =>
-                u.FullName.Contains(search) ||
-                u.Email!.Contains(search));
-        }
+            all = all.Where(u =>
+                u.FullName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                u.Email!.Contains(search, StringComparison.OrdinalIgnoreCase));
 
-        var totalCount = await query.CountAsync();
+        var totalCount = all.Count();
 
-        var items = await query
+        var items = all
             .OrderByDescending(u => u.Provider!.Rating)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -120,21 +118,19 @@ public class AdminProviderService : IAdminProviderService
                 Rating = u.Provider.Rating,
                 ReviewCount = u.Provider.ReviewCount,
                 CreatedAt = u.CreateAt
-            })
-            .ToListAsync();
+            });
 
         return PagedResponse<ProviderDto>.Ok(items, totalCount, page, pageSize);
     }
 
-    // ── GET BY ID ─────────────────────────────────────────────
     public async Task<ApiResponse<ProviderDto>> GetProviderByIdAsync(string id)
     {
-        var u = await _context.Users
-            .Include(x => x.Provider)
-            .FirstOrDefaultAsync(x =>
-                x.Id == id &&
-                x.Role == UserRole.Provider &&
-                !x.IsDeleted);
+        var u = await _unitOfWork.Repository<ApplicationUser>()
+            .GetOneAsync(
+                x => x.Id == id &&
+                     x.Role == UserRole.Provider &&
+                     !x.IsDeleted,
+                includes: [x => x.Provider!]);
 
         if (u is null)
             return ApiResponse<ProviderDto>.NotFound("Provider not found");
@@ -159,7 +155,14 @@ public class AdminProviderService : IAdminProviderService
 
     public async Task<ApiResponse<string>> SuspendProviderAsync(string id)
     {
-        var u = await GetProvider(id);
+        var u = await _unitOfWork.Repository<ApplicationUser>()
+            .GetOneAsync(
+                x => x.Id == id &&
+                     x.Role == UserRole.Provider &&
+                     x.Provider!.State == ProviderState.Active &&
+                     !x.IsDeleted,
+                includes: [x => x.Provider!]);
+
         if (u is null)
             return ApiResponse<string>.NotFound("Provider not found");
 
@@ -170,14 +173,21 @@ public class AdminProviderService : IAdminProviderService
         u.Provider!.State = ProviderState.Suspended;
         u.Provider.AvailabilityStatus = AvailabilityStatus.Offline;
 
-        await _context.SaveChangesAsync();
+        _unitOfWork.Repository<ApplicationUser>().Update(u);
+        await _unitOfWork.CommitAsync();
 
         return ApiResponse<string>.Ok("Provider suspended successfully");
     }
 
     public async Task<ApiResponse<string>> BanProviderAsync(string id)
     {
-        var u = await GetProvider(id);
+        var u = await _unitOfWork.Repository<ApplicationUser>()
+            .GetOneAsync(
+                x => x.Id == id &&
+                     x.Role == UserRole.Provider &&
+                     !x.IsDeleted,
+                includes: [x => x.Provider!]);
+
         if (u is null)
             return ApiResponse<string>.NotFound("Provider not found");
 
@@ -188,19 +198,20 @@ public class AdminProviderService : IAdminProviderService
         u.Provider!.State = ProviderState.Banned;
         u.Provider.AvailabilityStatus = AvailabilityStatus.Offline;
 
-        await _context.SaveChangesAsync();
+        _unitOfWork.Repository<ApplicationUser>().Update(u);
+        await _unitOfWork.CommitAsync();
 
         return ApiResponse<string>.Ok("Provider banned successfully");
     }
-    
+
     public async Task<ApiResponse<string>> RestoreProviderAsync(string id)
     {
-        var u = await _context.Users
-            .Include(x => x.Provider)
-            .FirstOrDefaultAsync(x =>
-                x.Id == id &&
-                x.Role == UserRole.Provider &&
-                !x.IsDeleted);
+        var u = await _unitOfWork.Repository<ApplicationUser>()
+            .GetOneAsync(
+                x => x.Id == id &&
+                     x.Role == UserRole.Provider &&
+                     !x.IsDeleted,
+                includes: [x => x.Provider!]);
 
         if (u is null)
             return ApiResponse<string>.NotFound("Provider not found");
@@ -211,19 +222,9 @@ public class AdminProviderService : IAdminProviderService
         u.Status = UserStatus.Active;
         u.Provider!.State = ProviderState.Active;
 
-        await _context.SaveChangesAsync();
+        _unitOfWork.Repository<ApplicationUser>().Update(u);
+        await _unitOfWork.CommitAsync();
 
         return ApiResponse<string>.Ok("Provider restored successfully");
-    }
-
-    private async Task<ApplicationUser?> GetProvider(string id)
-    {
-        return await _context.Users
-            .Include(u => u.Provider)
-            .FirstOrDefaultAsync(u =>
-                u.Id == id &&
-                u.Role == UserRole.Provider &&
-                u.Provider!.State == ProviderState.Active &&
-                !u.IsDeleted);
     }
 }
