@@ -21,20 +21,12 @@ namespace KHDMA.Infrastructure.Data
         public DbSet<Address> Addresses { get; set; }
         public DbSet<Notification> Notifications { get; set; }
 <<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
 =======
         public DbSet<CommissionSettings> CommissionSettings { get; set; }
->>>>>>> dfa0a46796f6e0a9f9450a6bf8e161001cc1ce1d
-=======
-        public DbSet<CommissionSettings> CommissionSettings { get; set; }
->>>>>>> dfa0a46796f6e0a9f9450a6bf8e161001cc1ce1d
-=======
-        public DbSet<CommissionSettings> CommissionSettings { get; set; }
->>>>>>> dfa0a46796f6e0a9f9450a6bf8e161001cc1ce1d
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
