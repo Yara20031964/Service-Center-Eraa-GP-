@@ -20,7 +20,7 @@ namespace KHDMA.Infrastructure.Data
         public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<Address> Addresses { get; set; }
         public DbSet<Notification> Notifications { get; set; }
-
+        public DbSet<CommissionSettings> CommissionSettings { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -133,6 +133,16 @@ namespace KHDMA.Infrastructure.Data
                 .HasOne(n => n.User)
                 .WithMany(u => u.Notifications)
                 .HasForeignKey(n => n.UserId);
+            modelBuilder.Entity<CommissionSettings>().HasData(
+                new CommissionSettings
+                {
+                    Id = 1,
+                    Rate = 0.15m,
+                    LastUpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "system"
+                }
+            );
+
         }
     }
 }
