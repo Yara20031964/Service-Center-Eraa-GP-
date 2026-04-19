@@ -13,6 +13,8 @@ namespace KHDMA.Domain.Entities
         public int? WorkQualityRating { get; set; } // 1 to 5 stars
         public int? CleanlinesRating { get; set; } // 1 to 5 stars
         public DateTime CreateAt { get; set; } = DateTime.UtcNow;
+        public bool IsHidden { get; set; } = false;
+        public bool IsDeleted { get; set; } = false;
 
         //Navigation properties
         public Booking Booking { get; set; }

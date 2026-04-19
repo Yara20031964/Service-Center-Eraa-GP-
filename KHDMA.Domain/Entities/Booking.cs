@@ -16,6 +16,7 @@ namespace KHDMA.Domain.Entities
         public BookingStatus Status { get; set; } = BookingStatus.Pending;
         public decimal TotalPrice { get; set; }
         public string? Notes { get; set; }
+        public string? CancelReason { get; set; }
         public DateTime CreateAt { get; set; } = DateTime.UtcNow;
 
         //Navigation properties

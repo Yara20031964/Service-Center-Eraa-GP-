@@ -14,11 +14,11 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.13" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KHDMA.Application\KHDMA.Application.csproj" />
     <ProjectReference Include="..\KHDMA.Infrastructure\KHDMA.Infrastructure.csproj" />
   </ItemGroup>
 
