@@ -162,6 +162,9 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<int>("BookingType")
                         .HasColumnType("int");
 
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreateAt")
                         .HasColumnType("datetime2");
 
@@ -465,6 +468,12 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ProviderId")
                         .IsRequired()

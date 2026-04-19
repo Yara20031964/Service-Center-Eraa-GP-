@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KHDMA.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260308235435_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260327075524_InitialAzureRevert")]
+    partial class InitialAzureRevert
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -164,6 +164,9 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.Property<int>("BookingType")
                         .HasColumnType("int");
+
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreateAt")
                         .HasColumnType("datetime2");
@@ -445,6 +448,12 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ProviderId")
                         .IsRequired()
