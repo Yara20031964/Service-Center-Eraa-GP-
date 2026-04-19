@@ -21,6 +21,8 @@ namespace KHDMA.Infrastructure.Data
         public DbSet<Address> Addresses { get; set; }
         public DbSet<Notification> Notifications { get; set; }
 
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
