@@ -19,5 +19,6 @@ namespace KHDMA.Domain.Entities
         public Provider? Provider { get; set; }
         public Admin? Admin { get; set; }
         public List<Notification> Notifications { get; set; } = new List<Notification>();
+        public ICollection<Address> Addresses { get; set; } = new List<Address>();
     }
 }

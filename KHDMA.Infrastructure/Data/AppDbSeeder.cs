@@ -16,9 +16,6 @@ namespace KHDMA.Infrastructure.Data
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // Ensure database is created and migrated (optional)
-            // await context.Database.MigrateAsync();
-
             if (await context.Users.AnyAsync())
             {
                 return; // DB has been seeded

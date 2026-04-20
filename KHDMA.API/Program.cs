@@ -37,7 +37,12 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-// Run Database Seeder
+// Apply pending migrations and seed
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 await KHDMA.Infrastructure.Data.AppDbSeeder.SeedAsync(app.Services);
 
 app.Run();

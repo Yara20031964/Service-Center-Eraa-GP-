@@ -4,6 +4,7 @@ using KHDMA.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KHDMA.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420125322_AddServiceDetailsAndFavorites")]
+    partial class AddServiceDetailsAndFavorites
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -32,6 +35,10 @@ namespace KHDMA.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CustomerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("Label")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -42,13 +49,9 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("float");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("CustomerId");
 
                     b.ToTable("Addresses");
                 });
@@ -300,7 +303,7 @@ namespace KHDMA.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            LastUpdatedAt = new DateTime(2026, 3, 29, 0, 0, 0, 0, DateTimeKind.Utc),
+                            LastUpdatedAt = new DateTime(2026, 4, 20, 12, 53, 21, 815, DateTimeKind.Utc).AddTicks(537),
                             Rate = 0.15m,
                             UpdatedBy = "system"
                         });
@@ -332,24 +335,6 @@ namespace KHDMA.Infrastructure.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("CustomerFavorites");
-                });
-
-            modelBuilder.Entity("KHDMA.Domain.Entities.CustomerFavoriteProvider", b =>
-                {
-                    b.Property<string>("CustomerId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ProviderId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("CustomerId", "ProviderId");
-
-                    b.HasIndex("ProviderId");
-
-                    b.ToTable("CustomerFavoriteProviders");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Notification", b =>
@@ -444,20 +429,8 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<double?>("CurrentLongitude")
                         .HasColumnType("float");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ExperienceYears")
-                        .HasColumnType("int");
-
                     b.Property<decimal?>("HourlyRate")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("JobTitle")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("NumberOfJobsDone")
-                        .HasColumnType("int");
 
                     b.Property<double>("Rating")
                         .HasColumnType("float");
@@ -474,48 +447,6 @@ namespace KHDMA.Infrastructure.Migrations
                     b.HasKey("ApplicationUserId");
 
                     b.ToTable("Providers");
-                });
-
-            modelBuilder.Entity("KHDMA.Domain.Entities.ProviderCertificateImage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProviderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProviderId");
-
-                    b.ToTable("ProviderCertificateImages");
-                });
-
-            modelBuilder.Entity("KHDMA.Domain.Entities.ProviderPortfolioImage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProviderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProviderId");
-
-                    b.ToTable("ProviderPortfolioImages");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.ProviderService", b =>
@@ -829,13 +760,13 @@ namespace KHDMA.Infrastructure.Migrations
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Address", b =>
                 {
-                    b.HasOne("KHDMA.Domain.Entities.ApplicationUser", "User")
+                    b.HasOne("KHDMA.Domain.Entities.Customer", "Customer")
                         .WithMany("Addresses")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Admin", b =>
@@ -925,25 +856,6 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Navigation("Service");
                 });
 
-            modelBuilder.Entity("KHDMA.Domain.Entities.CustomerFavoriteProvider", b =>
-                {
-                    b.HasOne("KHDMA.Domain.Entities.Customer", "Customer")
-                        .WithMany("FavoriteProviders")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("KHDMA.Domain.Entities.Provider", "Provider")
-                        .WithMany("FavoritedBy")
-                        .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Provider");
-                });
-
             modelBuilder.Entity("KHDMA.Domain.Entities.Notification", b =>
                 {
                     b.HasOne("KHDMA.Domain.Entities.Booking", "Booking")
@@ -983,28 +895,6 @@ namespace KHDMA.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ApplicationUser");
-                });
-
-            modelBuilder.Entity("KHDMA.Domain.Entities.ProviderCertificateImage", b =>
-                {
-                    b.HasOne("KHDMA.Domain.Entities.Provider", "Provider")
-                        .WithMany("CertificateImages")
-                        .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Provider");
-                });
-
-            modelBuilder.Entity("KHDMA.Domain.Entities.ProviderPortfolioImage", b =>
-                {
-                    b.HasOne("KHDMA.Domain.Entities.Provider", "Provider")
-                        .WithMany("PortfolioImages")
-                        .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Provider");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.ProviderService", b =>
@@ -1139,8 +1029,6 @@ namespace KHDMA.Infrastructure.Migrations
 
             modelBuilder.Entity("KHDMA.Domain.Entities.ApplicationUser", b =>
                 {
-                    b.Navigation("Addresses");
-
                     b.Navigation("Admin");
 
                     b.Navigation("Customer");
@@ -1168,9 +1056,9 @@ namespace KHDMA.Infrastructure.Migrations
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Customer", b =>
                 {
-                    b.Navigation("Bookings");
+                    b.Navigation("Addresses");
 
-                    b.Navigation("FavoriteProviders");
+                    b.Navigation("Bookings");
 
                     b.Navigation("Favorites");
 
@@ -1180,12 +1068,6 @@ namespace KHDMA.Infrastructure.Migrations
             modelBuilder.Entity("KHDMA.Domain.Entities.Provider", b =>
                 {
                     b.Navigation("Bookings");
-
-                    b.Navigation("CertificateImages");
-
-                    b.Navigation("FavoritedBy");
-
-                    b.Navigation("PortfolioImages");
 
                     b.Navigation("ProviderServices");
 
