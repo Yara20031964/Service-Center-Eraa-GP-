@@ -15,15 +15,44 @@ namespace KHDMA.Infrastructure.Data
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            if (await context.Users.AnyAsync())
+            // Seed roles
+            foreach (var role in new[] { "Customer", "Provider", "Admin" })
             {
-                return; // DB has been seeded
+                if (!await roleManager.RoleExistsAsync(role))
+                    await roleManager.CreateAsync(new IdentityRole(role));
             }
 
             var hasher = new PasswordHasher<ApplicationUser>();
 
-            // 1. Create Users
+            // Seed admin separately
+            var adminExists = await context.Admins.AnyAsync();
+            if (!adminExists)
+            {
+                var adminUser = new ApplicationUser
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserName = "admin@khdma.com",
+                    NormalizedUserName = "ADMIN@KHDMA.COM",
+                    Email = "admin@khdma.com",
+                    NormalizedEmail = "ADMIN@KHDMA.COM",
+                    EmailConfirmed = true,
+                    FullName = "System Admin",
+                    Role = UserRole.Admin,
+                    Status = UserStatus.Active,
+                    CreateAt = DateTime.UtcNow
+                };
+                adminUser.PasswordHash = hasher.HashPassword(adminUser, "Admin123!");
+                context.Users.Add(adminUser);
+                context.Admins.Add(new Admin { ApplicationUserId = adminUser.Id });
+                await context.SaveChangesAsync();
+            }
+
+            if (await context.Users.Where(u => u.Role != UserRole.Admin).AnyAsync())
+                return;
+
+            // Seed test customer and provider
             var customerUser = new ApplicationUser
             {
                 Id = Guid.NewGuid().ToString(),
@@ -56,11 +85,7 @@ namespace KHDMA.Infrastructure.Data
 
             context.Users.AddRange(customerUser, providerUser);
 
-            // 2. Create Roles Instances
-            var customer = new Customer
-            {
-                ApplicationUserId = customerUser.Id
-            };
+            var customer = new Customer { ApplicationUserId = customerUser.Id };
             var provider = new Provider
             {
                 ApplicationUserId = providerUser.Id,
@@ -70,7 +95,6 @@ namespace KHDMA.Infrastructure.Data
             context.Customers.Add(customer);
             context.Providers.Add(provider);
 
-            // 3. Create Category & Service
             var category = new Category
             {
                 id = Guid.NewGuid(),
@@ -90,7 +114,6 @@ namespace KHDMA.Infrastructure.Data
             };
             context.Services.Add(service);
 
-            // 4. Create Bookings
             var booking1 = new Booking
             {
                 Id = Guid.NewGuid(),
@@ -121,6 +144,7 @@ namespace KHDMA.Infrastructure.Data
                 TotalPrice = 200.0m,
                 CreateAt = DateTime.UtcNow.AddDays(-6)
             };
+
             var booking3 = new Booking
             {
                 Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
@@ -135,10 +159,9 @@ namespace KHDMA.Infrastructure.Data
                 Notes = "Need this immediately! (Unpaid)",
                 CreateAt = DateTime.UtcNow
             };
-            
+
             context.Bookings.AddRange(booking1, booking2, booking3);
 
-            // 5. Create Payments (Assuming Booking 2 is completed & paid, Booking 1 is confirmed)
             var payment1 = new Payment
             {
                 Id = Guid.NewGuid(),
@@ -165,7 +188,6 @@ namespace KHDMA.Infrastructure.Data
 
             context.Payments.AddRange(payment1, payment2);
 
-            // 6. Create Review
             var review = new Review
             {
                 Id = Guid.NewGuid(),
@@ -184,7 +206,6 @@ namespace KHDMA.Infrastructure.Data
 
             context.Reviews.Add(review);
 
-            // Save all
             await context.SaveChangesAsync();
         }
     }

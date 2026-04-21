@@ -6,7 +6,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git check-ignore *)",
       "Bash(dotnet ef *)",
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "Bash(dotnet run *)"
     ]
   }
 }

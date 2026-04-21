@@ -1,10 +1,6 @@
-﻿using KHDMA.Application.DTOs.Auth.Request;
+using Domain.Common;
+using KHDMA.Application.DTOs.Auth.Request;
 using KHDMA.Application.DTOs.Auth.Response;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KHDMA.Application.Interfaces.Services
 {
@@ -13,7 +9,10 @@ namespace KHDMA.Application.Interfaces.Services
         Task<AuthResponseDto> RegisterCustomerAsync(RegisterCustomerDto registerDto);
         Task<AuthResponseDto> RegisterProviderAsync(RegisterProviderDto registerDto);
         Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
+        Task<AuthResponseDto> AdminLoginAsync(LoginDto loginDto);
         Task<AuthResponseDto> RefreshTokenAsync(string refreshToken);
-        Task <bool> RevokeTokenAsync(string refreshToken);
+        Task<bool> RevokeTokenAsync(string refreshToken);
+        Task<ApiResponse<string>> SendEmailConfirmationAsync(string userId);
+        Task<ApiResponse<string>> ConfirmEmailAsync(string userId, string token);
     }
 }
