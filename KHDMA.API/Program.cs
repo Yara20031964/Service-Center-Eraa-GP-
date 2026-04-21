@@ -1,9 +1,9 @@
-using System.Text;
 using Application.Services.Admin;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
+using KHDMA.Infrastructure;
 using KHDMA.Infrastructure.Data;
 using KHDMA.Infrastructure.Repositories;
 using KHDMA.Infrastructure.Services;
@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,7 +58,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-
+builder.Services.AddInfrastructure();//
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
