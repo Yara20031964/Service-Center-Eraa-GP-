@@ -22,8 +22,12 @@ namespace KHDMA.Infrastructure.Data
         public DbSet<Notification> Notifications { get; set; }
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-
         public DbSet<CommissionSettings> CommissionSettings { get; set; }
+        public DbSet<ServiceImage> ServiceImages { get; set; }
+        public DbSet<CustomerFavorite> CustomerFavorites { get; set; }
+        public DbSet<CustomerFavoriteProvider> CustomerFavoriteProviders { get; set; }
+        public DbSet<ProviderPortfolioImage> ProviderPortfolioImages { get; set; }
+        public DbSet<ProviderCertificateImage> ProviderCertificateImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -126,11 +130,60 @@ namespace KHDMA.Infrastructure.Data
                 .HasForeignKey(cm => cm.BookingId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Customer → Address 1:N
+            // Service → ServiceImage 1:N
+            modelBuilder.Entity<ServiceImage>()
+                .HasOne(si => si.Service)
+                .WithMany(s => s.Images)
+                .HasForeignKey(si => si.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // CustomerFavorite - composite PK (many-to-many: Customer ↔ Service)
+            modelBuilder.Entity<CustomerFavorite>()
+                .HasKey(cf => new { cf.CustomerId, cf.ServiceId });
+            modelBuilder.Entity<CustomerFavorite>()
+                .HasOne(cf => cf.Customer)
+                .WithMany(c => c.Favorites)
+                .HasForeignKey(cf => cf.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<CustomerFavorite>()
+                .HasOne(cf => cf.Service)
+                .WithMany(s => s.Favorites)
+                .HasForeignKey(cf => cf.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ApplicationUser → Address 1:N
             modelBuilder.Entity<Address>()
-                .HasOne(a => a.Customer)
-                .WithMany(c => c.Addresses)
-                .HasForeignKey(a => a.CustomerId);
+                .HasOne(a => a.User)
+                .WithMany(u => u.Addresses)
+                .HasForeignKey(a => a.UserId);
+
+            // CustomerFavoriteProvider - composite PK (many-to-many: Customer ↔ Provider)
+            modelBuilder.Entity<CustomerFavoriteProvider>()
+                .HasKey(cf => new { cf.CustomerId, cf.ProviderId });
+            modelBuilder.Entity<CustomerFavoriteProvider>()
+                .HasOne(cf => cf.Customer)
+                .WithMany(c => c.FavoriteProviders)
+                .HasForeignKey(cf => cf.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<CustomerFavoriteProvider>()
+                .HasOne(cf => cf.Provider)
+                .WithMany(p => p.FavoritedBy)
+                .HasForeignKey(cf => cf.ProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Provider → ProviderPortfolioImage 1:N
+            modelBuilder.Entity<ProviderPortfolioImage>()
+                .HasOne(pi => pi.Provider)
+                .WithMany(p => p.PortfolioImages)
+                .HasForeignKey(pi => pi.ProviderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Provider → ProviderCertificateImage 1:N
+            modelBuilder.Entity<ProviderCertificateImage>()
+                .HasOne(ci => ci.Provider)
+                .WithMany(p => p.CertificateImages)
+                .HasForeignKey(ci => ci.ProviderId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // ApplicationUser → Notification 1:N
             modelBuilder.Entity<Notification>()
@@ -142,7 +195,7 @@ namespace KHDMA.Infrastructure.Data
                 {
                     Id = 1,
                     Rate = 0.15m,
-                    LastUpdatedAt = DateTime.UtcNow,
+                    LastUpdatedAt = new DateTime(2026, 3, 29, 0, 0, 0, DateTimeKind.Utc),
                     UpdatedBy = "system"
                 }
             );

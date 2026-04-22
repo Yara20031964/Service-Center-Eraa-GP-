@@ -9,7 +9,8 @@ namespace KHDMA.Domain.Entities
         public ApplicationUser ApplicationUser { get; set; }
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
-        public ICollection<Address> Addresses { get; set; } = new List<Address>();
+        public ICollection<CustomerFavorite> Favorites { get; set; } = new List<CustomerFavorite>();
+        public ICollection<CustomerFavoriteProvider> FavoriteProviders { get; set; } = new List<CustomerFavoriteProvider>();
 
     }
 }

@@ -6,6 +6,10 @@
 # dotenv files
 .env
 
+# ASP.NET Core appsettings with sensitive data (connection strings, secrets)
+appsettings.json
+appsettings.*.json
+
 # User-specific files
 *.rsuser
 *.suo
