@@ -1,4 +1,5 @@
 using Application.Services.Admin;
+using KHDMA.API.Hubs;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
@@ -61,6 +62,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddInfrastructure();//
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+ 
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "KHDMA API", Version = "v1" });
@@ -86,7 +88,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-
+app.MapHub<NotificationHub>("/hubs/notifications");//
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();

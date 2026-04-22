@@ -38,5 +38,10 @@ namespace KHDMA.Infrastructure.Services
             // TODO: implement
             throw new NotImplementedException();
         }
+        public async Task TriggerAsync(NotificationEventDto notificationEvent)
+        {
+            // TODO: implement FCM + SignalR
+            throw new NotImplementedException();
+        }
     }
 }

@@ -2,6 +2,7 @@
 using KHDMA.Application.DTOs.Responses;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +21,16 @@ namespace KHDMA.API.Controllers
             _unitOfWork = unitOfWork;
             _UserManager = UserManager;
         }
+        [HttpPost("register-token")]
+        [Authorize]
+        public async Task<IActionResult> RegisterToken([FromBody] DeviceTokenDto dto)
+        {
+            // TODO: save token to DB
+            throw new NotImplementedException();
+        }
+
+
+
 
         [HttpPost("send")]
         public async Task<IActionResult> SendNotification(SendNotificationDto sendNotificationDto)

@@ -14,6 +14,7 @@ namespace KHDMA.Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
             services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSignalR();
             return services;
         }
     }

@@ -11,5 +11,10 @@ namespace KHDMA.Application.Interfaces.Services
     {
         Task<bool> SendToDeviceAsync(string deviceToken, FCMPayloadDto payload, CancellationToken ct = default);
         Task<bool> SendToTopicAsync(string topic, FCMPayloadDto payload, CancellationToken ct = default);
+         Task TriggerAsync(NotificationEventDto notificationEvent);
+        
+            // TODO: implement FCM + SignalR
+           
+        
     }
 }
