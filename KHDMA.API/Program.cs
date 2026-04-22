@@ -8,6 +8,7 @@ using KHDMA.Infrastructure.Data;
 using KHDMA.Infrastructure.Repositories;
 using KHDMA.Infrastructure.Services;
 using KHDMA.Infrastructure.Services.Admin;
+using KHDMA.Application.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IDispatchService, DispatchService>();
+builder.Services.AddScoped<ICancellationPolicy, CancellationPolicy>();
+builder.Services.AddScoped<IExportService, ExportService>();
+
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(KHDMA.Application.Interfaces.IBookingService).Assembly));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

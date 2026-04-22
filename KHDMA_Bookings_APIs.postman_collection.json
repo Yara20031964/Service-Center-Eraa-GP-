@@ -1,0 +1,237 @@
+{
+	"info": {
+		"_postman_id": "8b5f3a1d-9c4e-4b2a-8d1a-5f3a1d9c4e4b",
+		"name": "KHDMA - Booking System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Booking",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"providerId\": \"provider_id_here\",\n    \"serviceId\": \"service_guid_here\",\n    \"bookingType\": 0,\n    \"scheduledTime\": \"2026-05-01T10:00:00\",\n    \"address\": \"123 Cairo St.\",\n    \"latitude\": 30.0444,\n    \"longitude\": 31.2357,\n    \"totalPrice\": 150.00,\n    \"notes\": \"Please bring your tools.\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/Booking",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"Booking"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Customer Cancel Booking",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "\"Changed my mind, not home today.\"",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/Booking/:id",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"Booking",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "booking_guid_here"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Cancel Booking",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "\"Provider reported emergency, cannot fulfill.\"",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/Booking/admin/:id/cancel",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"Booking",
+						"admin",
+						":id",
+						"cancel"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "booking_guid_here"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Booking History",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/Booking/history?status=Pending&page=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"Booking",
+						"history"
+					],
+					"query": [
+						{
+							"key": "status",
+							"value": "Pending"
+						},
+						{
+							"key": "from",
+							"value": "2026-04-01",
+							"disabled": true
+						},
+						{
+							"key": "to",
+							"value": "2026-04-30",
+							"disabled": true
+						},
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin - Get All Bookings",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/Booking/admin?page=1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"Booking",
+						"admin"
+					],
+					"query": [
+						{
+							"key": "status",
+							"value": "Cancelled",
+							"disabled": true
+						},
+						{
+							"key": "customerId",
+							"value": "",
+							"disabled": true
+						},
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin - Export Bookings",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/Booking/admin/export?format=excel",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"api",
+						"Booking",
+						"admin",
+						"export"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "excel",
+							"description": "csv or excel"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{current_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
