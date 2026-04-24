@@ -1,11 +1,12 @@
 ﻿using Application.Services.Admin;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/users")]
-// [Authorize(Roles = "Admin")] 
+ [Authorize(Roles = "Admin")] 
 public class AdminCustomersController : ControllerBase
 {
     private readonly IAdminCustomerService _service;

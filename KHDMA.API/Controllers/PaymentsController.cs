@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using KHDMA.Application.Interfaces.Services;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KHDMA.API.Controllers
 {
     [Route("api/payments")]
     [ApiController]
-    // [Authorize]  // Uncomment when authentication is ready
+     [Authorize]  // Uncomment when authentication is ready
     public class PaymentsController : ControllerBase
     {
         private readonly IStripePaymentService _stripeService;

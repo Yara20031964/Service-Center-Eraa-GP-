@@ -7,7 +7,7 @@ namespace KHDMA.Infrastructure.Data
     public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
+        public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Provider> Providers { get; set; }
         public DbSet<Admin> Admins { get; set; }

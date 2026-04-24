@@ -1,4 +1,4 @@
-using System.Text;
+using Application.Interfaces.Services;
 using Application.Services.Admin;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Application.Interfaces.Services;
@@ -8,11 +8,13 @@ using KHDMA.Infrastructure.Data;
 using KHDMA.Infrastructure.Repositories;
 using KHDMA.Infrastructure.Services;
 using KHDMA.Infrastructure.Services.Admin;
+using KHDMA.Infrastructure.Services.Payment;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,9 +59,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-
+builder.Services.AddHttpClient<IPaymobService, PaymobService>();
+builder.Services.AddScoped<IPaymobService, PaymobService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<IAdminFinanceService, AdminFinanceService>();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "KHDMA API", Version = "v1" });
