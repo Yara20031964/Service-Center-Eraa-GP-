@@ -12,6 +12,7 @@ using KHDMA.Infrastructure.Services.Admin;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -44,6 +45,13 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
+builder.Services.AddLocalization();
+builder.Services.Configure<RequestLocalizationOptions>(options =>  {
+    var supportedCultures= new[] { "en", "ar" };
+    options.SetDefaultCulture("en")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+});
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -59,7 +67,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-builder.Services.AddInfrastructure();//
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();//
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>();//
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
  
@@ -89,12 +99,14 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 app.MapHub<NotificationHub>("/hubs/notifications");//
+app.UseRequestLocalization();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health");//
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())

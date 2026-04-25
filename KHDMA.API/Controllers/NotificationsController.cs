@@ -5,6 +5,7 @@ using KHDMA.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace KHDMA.API.Controllers
 {
@@ -71,7 +72,7 @@ namespace KHDMA.API.Controllers
 
             return Ok(result);
         }
-        [HttpPut("read/{id}")]
+        [HttpPut("{id}/read")]
         public async Task<IActionResult> Read(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -113,9 +114,13 @@ namespace KHDMA.API.Controllers
                 Msg = "Notification deleted successfully"
             });
         }
-        [HttpPut("read-all/{userId}")]
-        public async Task<IActionResult> MarkAllAsRead(string userId)
+        [HttpPut("read-all")]
+        [Authorize]
+        public async Task<IActionResult> MarkAllAsRead( )
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
             var notifications = await _notificationRepo.GetAsync(e => e.UserId == userId && !e.IsRead);
 
             if (!notifications.Any())
