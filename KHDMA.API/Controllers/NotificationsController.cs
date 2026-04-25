@@ -73,6 +73,7 @@ namespace KHDMA.API.Controllers
             return Ok(result);
         }
         [HttpPut("{id}/read")]
+        [Authorize]
         public async Task<IActionResult> Read(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -95,6 +96,7 @@ namespace KHDMA.API.Controllers
             });
         }
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> Delete(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -144,17 +146,18 @@ namespace KHDMA.API.Controllers
             });
         }
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetNotifications(
-        string? userId,
-       string? type,
-       bool? isRead,
-       int page = 1,
-        int pageSize = 10)
+              string? type,
+              bool? isRead,
+              int page = 1,
+             int pageSize = 10)
         {
-            var result = await _notificationRepo.GetAsync(tracked: false);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
 
-            if (!string.IsNullOrEmpty(userId))
-                result = result.Where(e => e.UserId == userId);
+            var result = await _notificationRepo.GetAsync(e => e.UserId == userId, tracked: false);
 
             if (!string.IsNullOrEmpty(type))
                 result = result.Where(e => e.Type == type);
@@ -177,7 +180,6 @@ namespace KHDMA.API.Controllers
                 Data = data
             });
         }
-
 
     }
 

@@ -70,6 +70,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();//
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>();//
+builder.Services.AddSignalR();//
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
  
