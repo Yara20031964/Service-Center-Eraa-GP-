@@ -4,12 +4,13 @@ using KHDMA.Application.DTOs.Admin;
 using KHDMA.Domain.Enums;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KHDMA.API.Controllers
 {
     [Route("api/admin/payments")]
     [ApiController]
-    // [Authorize(Roles = "Admin")]
+     [Authorize(Roles = "Admin")]
     public class AdminPaymentsController : ControllerBase
     {
         private readonly IAdminPaymentService _paymentService;

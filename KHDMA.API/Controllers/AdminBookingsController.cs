@@ -3,12 +3,13 @@ using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Enums;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KHDMA.API.Controllers
 {
     [Route("api/admin/bookings")]
     [ApiController]
-    // [Authorize(Roles = "Admin")] // will be  uncommented if Auth is setup
+     [Authorize(Roles = "Admin")] // will be  uncommented if Auth is setup
     public class AdminBookingsController : ControllerBase
     {
         private readonly IAdminBookingService _bookingService;

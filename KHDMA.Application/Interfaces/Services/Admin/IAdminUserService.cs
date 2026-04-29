@@ -1,7 +1,7 @@
 ﻿using Application.DTOs.Admin;
 using Domain.Common;
 
-namespace Application.Services.Admin;
+namespace KHDMA.Application.Interfaces.Services.Admin;
 
 public interface IAdminUserService
 {

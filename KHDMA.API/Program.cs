@@ -1,5 +1,6 @@
-using System.Text;
+using Application.Interfaces.Services;
 using Application.Services.Admin;
+using KHDMA.Application.Interfaces.Payment;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
@@ -9,14 +10,22 @@ using KHDMA.Infrastructure.Repositories;
 using KHDMA.Infrastructure.Services;
 using KHDMA.Infrastructure.Services.Admin;
 using KHDMA.Application.Interfaces;
+using KHDMA.Infrastructure.Services.Payment;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/khdma-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
+builder.Host.UseSerilog();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -44,16 +53,32 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontends", policy =>
+        policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "https://your-admin-domain.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+});
+
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAdminModerationService, AdminModerationService>();
 builder.Services.AddScoped<IAdminCustomerService, AdminCustomerService>();
 builder.Services.AddScoped<IAdminProviderService, AdminProviderService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 builder.Services.AddScoped<ICommissionService, CommissionService>();
-builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.Admin.IAdminBookingService, KHDMA.Infrastructure.Services.Admin.AdminBookingService>();
-builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.Admin.IAdminPaymentService, KHDMA.Infrastructure.Services.Admin.AdminPaymentService>();
-builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.Admin.IAdminReviewService, KHDMA.Infrastructure.Services.Admin.AdminReviewService>();
-builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.IStripePaymentService, KHDMA.Infrastructure.Services.Payment.StripePaymentService>();
+builder.Services.AddScoped<IAdminBookingService, AdminBookingService>();
+builder.Services.AddScoped<IAdminPaymentService, AdminPaymentService>();
+builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
+builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.IStripePaymentService,
+    KHDMA.Infrastructure.Services.Payment.StripePaymentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
@@ -63,6 +88,10 @@ builder.Services.AddScoped<ICancellationPolicy, CancellationPolicy>();
 builder.Services.AddScoped<IExportService, ExportService>();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(KHDMA.Application.Interfaces.IBookingService).Assembly));
+builder.Services.AddScoped<IAdminFinanceService, AdminFinanceService>();
+builder.Services.AddHttpClient<IPaymobService, PaymobService>();
+
+builder.Services.AddScoped<IAdminContentService, AdminContentService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -83,7 +112,11 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
             },
             Array.Empty<string>()
         }
@@ -96,8 +129,10 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontends");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<KHDMA.API.Middleware.AuditMiddleware>();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
