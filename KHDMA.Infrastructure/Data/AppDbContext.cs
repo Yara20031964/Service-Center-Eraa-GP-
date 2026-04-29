@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using KHDMA.Domain.Entities;
 
@@ -212,6 +212,13 @@ namespace KHDMA.Infrastructure.Data
                     UpdatedBy = "system"
                 }
             );
+
+            // Performance Indexes for Azure SQL
+            modelBuilder.Entity<Booking>().HasIndex(b => b.CustomerId);
+            modelBuilder.Entity<Booking>().HasIndex(b => b.ProviderId);
+            modelBuilder.Entity<Booking>().HasIndex(b => new { b.Status, b.CreateAt });
+            modelBuilder.Entity<ChatMessage>().HasIndex(m => m.BookingId);
+            modelBuilder.Entity<Notification>().HasIndex(n => n.UserId);
         }
     }
 }

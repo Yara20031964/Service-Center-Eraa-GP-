@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KHDMA.Application.Features.Bookings.Commands.CreateBooking;
 using KHDMA.Application.Features.Bookings.Commands.CancelBooking;
+using KHDMA.Application.Features.Bookings.Commands.CompleteBooking;
 using KHDMA.Application.Features.Bookings.Queries.GetBookingHistory;
 using KHDMA.Application.Features.Bookings.Queries.GetAdminBookings;
 using KHDMA.Application.Features.Bookings.Queries.ExportBookings;
@@ -121,6 +122,106 @@ namespace KHDMA.API.Controllers
             return Ok(result); // result is already PagedResponse
         }
 
+        [HttpPost("{id}/complete")]
+        public async Task<IActionResult> Complete(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+
+            var command = new CompleteBookingCommand
+            {
+                BookingId = id,
+                ProviderId = userId
+            };
+
+            var result = await _mediator.Send(command);
+            return result ? Ok(ApiResponse<bool>.Ok(true, "Booking completed successfully")) : BadRequest(ApiResponse<bool>.Fail("Failed to complete booking"));
+        }
+
+        [HttpPost("{id}/accept")]
+        public async Task<IActionResult> Accept(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.AcceptBooking.AcceptBookingCommand
+            {
+                BookingId = id,
+                ProviderId = userId
+            };
+
+            var result = await _mediator.Send(command);
+            return result ? Ok(ApiResponse<bool>.Ok(true, "Booking accepted successfully")) : BadRequest(ApiResponse<bool>.Fail("Failed to accept booking"));
+        }
+
+        [HttpPost("{id}/reject")]
+        public async Task<IActionResult> Reject(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.RejectBooking.RejectBookingCommand
+            {
+                BookingId = id,
+                ProviderId = userId
+            };
+
+            var result = await _mediator.Send(command);
+            return result ? Ok(ApiResponse<bool>.Ok(true, "Booking rejected successfully")) : BadRequest(ApiResponse<bool>.Fail("Failed to reject booking"));
+        }
+
+        [HttpPost("{id}/mark-en-route")]
+        public async Task<IActionResult> MarkEnRoute(Guid id, [FromQuery] string? eta)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.UpdateStatus.UpdateBookingStatusCommand
+            {
+                BookingId = id,
+                ProviderId = userId,
+                NewStatus = BookingStatus.EnRoute,
+                Eta = eta
+            };
+
+            var result = await _mediator.Send(command);
+            return result ? Ok(ApiResponse<bool>.Ok(true, "Changed status to En Route")) : BadRequest(ApiResponse<bool>.Fail("Failed to update status"));
+        }
+
+        [HttpPost("{id}/mark-arrived")]
+        public async Task<IActionResult> MarkArrived(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.UpdateStatus.UpdateBookingStatusCommand
+            {
+                BookingId = id,
+                ProviderId = userId,
+                NewStatus = BookingStatus.Arrived
+            };
+
+            var result = await _mediator.Send(command);
+            return result ? Ok(ApiResponse<bool>.Ok(true, "Changed status to Arrived")) : BadRequest(ApiResponse<bool>.Fail("Failed to update status"));
+        }
+
+        [HttpPost("{id}/mark-in-progress")]
+        public async Task<IActionResult> MarkInProgress(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.UpdateStatus.UpdateBookingStatusCommand
+            {
+                BookingId = id,
+                ProviderId = userId,
+                NewStatus = BookingStatus.InProgress
+            };
+
+            var result = await _mediator.Send(command);
+            return result ? Ok(ApiResponse<bool>.Ok(true, "Changed status to In Progress")) : BadRequest(ApiResponse<bool>.Fail("Failed to update status"));
+        }
+
         [HttpGet("admin/export")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Export([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string format = "csv")
@@ -138,6 +239,13 @@ namespace KHDMA.API.Controllers
             var contentType = format.ToLower() == "excel" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
             
             return File(result, contentType, fileName);
+        }
+        [HttpPost("{id}/retry-payment")]
+        public async Task<IActionResult> RetryPayment(Guid id)
+        {
+            var command = new KHDMA.Application.Features.Bookings.Commands.RetryPayment.RetryPaymentCommand { BookingId = id };
+            var result = await _mediator.Send(command);
+            return StatusCode(result.StatusCode, result);
         }
     }
 }

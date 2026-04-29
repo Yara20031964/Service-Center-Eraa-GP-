@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Admin;
+using Application.DTOs.Admin;
 using Domain.Common;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Application.Interfaces.Services.Admin;
@@ -227,5 +227,36 @@ public class AdminProviderService : IAdminProviderService
         await _unitOfWork.CommitAsync();
 
         return ApiResponse<string>.Ok("Provider restored successfully");
+    }
+
+    public async Task<ApiResponse<ProviderPerformanceDto>> GetProviderPerformanceAsync(string id)
+    {
+        var providerRepo = _unitOfWork.Repository<Provider>();
+        var userRepo = _unitOfWork.Repository<ApplicationUser>();
+        var bookingRepo = _unitOfWork.Repository<Booking>();
+
+        var user = await userRepo.GetOneAsync(u => u.Id == id && u.Role == UserRole.Provider, includes: [u => u.Provider!]);
+        if (user == null) return ApiResponse<ProviderPerformanceDto>.Fail("Provider not found");
+
+        var bookings = await bookingRepo.GetAsync(b => b.ProviderId == id);
+        int total = bookings.Count();
+        int completed = bookings.Count(b => b.Status == BookingStatus.Completed);
+        int cancelled = bookings.Count(b => b.Status == BookingStatus.Cancelled);
+
+        var dto = new ProviderPerformanceDto
+        {
+            ProviderId = id,
+            ProviderName = user.FullName,
+            AverageRating = user.Provider!.Rating,
+            TotalBookings = total,
+            CompletedBookings = completed,
+            CancelledBookings = cancelled,
+            CompletionRate = total > 0 ? (double)completed / total * 100 : 0,
+            CancellationRate = total > 0 ? (double)cancelled / total * 100 : 0,
+            TotalEarnings = user.Provider.TotalEarnings,
+            CurrentBalance = user.Provider.Balance
+        };
+
+        return ApiResponse<ProviderPerformanceDto>.Ok(dto);
     }
 }

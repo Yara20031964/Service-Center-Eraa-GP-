@@ -53,5 +53,12 @@ namespace KHDMA.API.Controllers
             if (!response.Success) return NotFound(response);
             return Ok(response);
         }
+
+        [HttpGet("{id}/transcript")]
+        public async Task<IActionResult> GetChatTranscript(Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var response = await _bookingService.GetChatTranscriptAsync(id, page, pageSize);
+            return Ok(response);
+        }
     }
 }

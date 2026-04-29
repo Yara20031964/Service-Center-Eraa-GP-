@@ -32,6 +32,13 @@ namespace KHDMA.Application.Features.Bookings.Commands.CreateBooking
             var service = await serviceRepository.GetOneAsync(s => s.id == request.ServiceId);
             if (service == null) throw new Exception("Service not found");
 
+            if (request.BookingType == KHDMA.Domain.Enums.BookingType.Scheduled)
+            {
+                if (!request.ScheduledTime.HasValue) throw new Exception("Scheduled time is required for scheduled bookings");
+                if (request.ScheduledTime.Value < DateTime.UtcNow.AddHours(2)) 
+                    throw new Exception("Scheduled bookings must be at least 2 hours in advance");
+            }
+
             var booking = new Booking
             {
                 CustomerId = request.CustomerId,

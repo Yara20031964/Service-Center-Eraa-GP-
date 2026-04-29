@@ -12,5 +12,6 @@ namespace KHDMA.Application.Interfaces.Services.Admin
         Task<ApiResponse<BookingDetailDto>> GetBookingDetailsAsync(Guid bookingId);
         Task<ApiResponse<bool>> CancelBookingAsync(Guid bookingId, string reason);
         Task<ApiResponse<object>> GetBookingStatusHistoryAsync(Guid bookingId); // Returning object for now, or could define a specific DTO
+        Task<PagedResponse<ChatTranscriptDto>> GetChatTranscriptAsync(Guid bookingId, int page, int pageSize);
     }
 }

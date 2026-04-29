@@ -1,4 +1,4 @@
-﻿using KHDMA.Domain.Enums;
+using KHDMA.Domain.Enums;
 
 namespace Application.DTOs.Admin;
 
@@ -25,8 +25,8 @@ public class ProviderDto
     public decimal HourlyRate { get; set; }
 
     public double Rating { get; set; }
-
     public int ReviewCount { get; set; }
+    public double PublicRating => ReviewCount >= 3 ? Rating : 0;
 
     public DateTime CreatedAt { get; set; }
 }

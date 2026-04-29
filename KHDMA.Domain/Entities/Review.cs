@@ -9,6 +9,8 @@ namespace KHDMA.Domain.Entities
 
         public int Rating { get; set; } // 1 to 5 stars
         public string? Comment { get; set; }
+        public string? ProviderReply { get; set; }
+        public DateTime? ProviderReplyAt { get; set; }
         public int? PunctualityRating { get; set; } // 1 to 5 stars
         public int? WorkQualityRating { get; set; } // 1 to 5 stars
         public int? CleanlinesRating { get; set; } // 1 to 5 stars

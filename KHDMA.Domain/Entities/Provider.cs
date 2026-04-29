@@ -16,6 +16,8 @@ namespace KHDMA.Domain.Entities
         public string? JobTitle { get; set; }
         public int? ExperienceYears { get; set; }
         public int NumberOfJobsDone { get; set; } = 0;
+        public decimal TotalEarnings { get; set; } = 0;
+        public decimal Balance { get; set; } = 0;
         public string? Description { get; set; }
 
         //Navigation properties
