@@ -7,6 +7,9 @@ namespace KHDMA.Infrastructure.Data
     public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public DbSet<Banner> Banners { get; set; }
+        public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+        public DbSet<CancellationPolicy> CancellationPolicies { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Provider> Providers { get; set; }
@@ -199,7 +202,16 @@ namespace KHDMA.Infrastructure.Data
                     UpdatedBy = "system"
                 }
             );
-
+            modelBuilder.Entity<CancellationPolicy>().HasData(
+                new CancellationPolicy
+                {
+                    Id = 1,
+                    FreeCancelWindowMinutes = 10,
+                    CancellationFee = 20m,
+                    LastUpdatedAt = new DateTime(2026, 4, 29, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedBy = "system"
+                }
+            );
         }
     }
 }

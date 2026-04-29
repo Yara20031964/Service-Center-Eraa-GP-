@@ -1,7 +1,7 @@
 ﻿using Application.DTOs.Payments;
 using Domain.Common;
 
-namespace Application.Interfaces.Services;
+namespace KHDMA.Application.Interfaces.Payment;
 
 public interface IAdminFinanceService
 {

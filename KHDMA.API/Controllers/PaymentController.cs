@@ -1,5 +1,5 @@
 ﻿using Application.DTOs.Payment;
-using Application.Interfaces.Services;
+using KHDMA.Application.Interfaces.Payment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

@@ -1,6 +1,6 @@
 ﻿using Application.DTOs.Payment;
-using Application.Interfaces.Services;
 using Domain.Common;
+using KHDMA.Application.Interfaces.Payment;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;

@@ -1,4 +1,4 @@
-﻿using Application.Services.Admin;
+﻿using KHDMA.Application.Interfaces.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

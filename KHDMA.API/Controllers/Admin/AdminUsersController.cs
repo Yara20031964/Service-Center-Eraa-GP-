@@ -1,5 +1,5 @@
 ﻿using Application.DTOs.Admin;
-using Application.Services.Admin;
+using KHDMA.Application.Interfaces.Services.Admin;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers.Admin;
