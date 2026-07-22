@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using KHDMA.Domain.Entities;
 
@@ -7,7 +7,10 @@ namespace KHDMA.Infrastructure.Data
     public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
+        public DbSet<Banner> Banners { get; set; }
+        public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+        public DbSet<CancellationPolicy> CancellationPolicies { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Provider> Providers { get; set; }
         public DbSet<Admin> Admins { get; set; }
@@ -199,7 +202,25 @@ namespace KHDMA.Infrastructure.Data
                     UpdatedBy = "system"
                 }
             );
+            modelBuilder.Entity<CancellationPolicy>().HasData(
+                new CancellationPolicy
+                {
+                    Id = 1,
+                    FreeCancelWindowMinutes = 10,
+                    CancellationFee = 20m,
+                    LastUpdatedAt = new DateTime(2026, 4, 29, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedBy = "system"
+                }
+            );
 
+            // Performance Indexes for Azure SQL
+            modelBuilder.Entity<Booking>().HasIndex(b => b.CustomerId);
+            modelBuilder.Entity<Booking>().HasIndex(b => b.ProviderId);
+            modelBuilder.Entity<Booking>().HasIndex(b => new { b.Status, b.CreateAt });
+            modelBuilder.Entity<ChatMessage>().HasIndex(m => m.BookingId);
+            modelBuilder.Entity<Notification>().HasIndex(n => n.UserId);
+            modelBuilder.Entity<Notification>().HasIndex(n => new { n.UserId, n.IsRead });
+            modelBuilder.Entity<Notification>().HasIndex(n => n.Type);
         }
     }
 }

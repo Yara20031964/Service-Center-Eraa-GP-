@@ -1,12 +1,13 @@
-﻿using Application.DTOs.Admin;
-using Application.Services.Admin;
+using Application.DTOs.Admin;
+using KHDMA.Application.Interfaces.Services.Admin;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/users")]
-// [Authorize(Roles = "Admin")]
+ [Authorize(Roles = "Admin")]
 public class AdminProvidersController : ControllerBase
 {
     private readonly IAdminProviderService _service;
@@ -74,6 +75,13 @@ public class AdminProvidersController : ControllerBase
     public async Task<IActionResult> Restore(string id)
     {
         var result = await _service.RestoreProviderAsync(id);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("providers/{id}/performance")]
+    public async Task<IActionResult> GetPerformance(string id)
+    {
+        var result = await _service.GetProviderPerformanceAsync(id);
         return StatusCode(result.StatusCode, result);
     }
 }

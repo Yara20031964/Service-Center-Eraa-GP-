@@ -3,6 +3,7 @@ using KHDMA.Application.DTOs.Auth.Request;
 using KHDMA.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KHDMA.API.Controllers;
 
@@ -17,6 +18,7 @@ public class AuthController : ControllerBase
         _service = service;
     }
 
+    [EnableRateLimiting("AuthPolicy")]
     [HttpPost("register/customer")]
     public async Task<IActionResult> RegisterCustomer([FromForm] RegisterCustomerDto dto)
     {
@@ -26,6 +28,7 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [EnableRateLimiting("AuthPolicy")]
     [HttpPost("register/provider")]
     public async Task<IActionResult> RegisterProvider([FromForm] RegisterProviderDto dto)
     {
@@ -35,6 +38,7 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [EnableRateLimiting("AuthPolicy")]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
@@ -44,6 +48,7 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [EnableRateLimiting("AuthPolicy")]
     [HttpPost("login/admin")]
     public async Task<IActionResult> AdminLogin([FromBody] LoginDto dto)
     {

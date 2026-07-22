@@ -2,8 +2,10 @@
 using KHDMA.Application.DTOs.Responses;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace KHDMA.API.Controllers
 {
@@ -20,6 +22,16 @@ namespace KHDMA.API.Controllers
             _unitOfWork = unitOfWork;
             _UserManager = UserManager;
         }
+        [HttpPost("register-token")]
+        [Authorize]
+        public async Task<IActionResult> RegisterToken([FromBody] DeviceTokenDto dto)
+        {
+            // TODO: save token to DB
+            throw new NotImplementedException();
+        }
+
+
+
 
         [HttpPost("send")]
         public async Task<IActionResult> SendNotification(SendNotificationDto sendNotificationDto)
@@ -60,7 +72,8 @@ namespace KHDMA.API.Controllers
 
             return Ok(result);
         }
-        [HttpPut("read/{id}")]
+        [HttpPut("{id}/read")]
+        [Authorize]
         public async Task<IActionResult> Read(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -83,6 +96,7 @@ namespace KHDMA.API.Controllers
             });
         }
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> Delete(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -102,9 +116,13 @@ namespace KHDMA.API.Controllers
                 Msg = "Notification deleted successfully"
             });
         }
-        [HttpPut("read-all/{userId}")]
-        public async Task<IActionResult> MarkAllAsRead(string userId)
+        [HttpPut("read-all")]
+        [Authorize]
+        public async Task<IActionResult> MarkAllAsRead( )
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
             var notifications = await _notificationRepo.GetAsync(e => e.UserId == userId && !e.IsRead);
 
             if (!notifications.Any())
@@ -128,17 +146,18 @@ namespace KHDMA.API.Controllers
             });
         }
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetNotifications(
-        string? userId,
-       string? type,
-       bool? isRead,
-       int page = 1,
-        int pageSize = 10)
+              string? type,
+              bool? isRead,
+              int page = 1,
+             int pageSize = 10)
         {
-            var result = await _notificationRepo.GetAsync(tracked: false);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
 
-            if (!string.IsNullOrEmpty(userId))
-                result = result.Where(e => e.UserId == userId);
+            var result = await _notificationRepo.GetAsync(e => e.UserId == userId, tracked: false);
 
             if (!string.IsNullOrEmpty(type))
                 result = result.Where(e => e.Type == type);
@@ -161,7 +180,6 @@ namespace KHDMA.API.Controllers
                 Data = data
             });
         }
-
 
     }
 

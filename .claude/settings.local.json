@@ -10,6 +10,8 @@
       "Bash(dotnet run *)",
       "Bash(python -c ' *)",
       "Bash(grep -v \"^\\\\s*//\")",
+      "Bash(git rev-list *)",
+      "Bash(git *)",
       "Read(//d/Flutter/khedma/**)"
     ]
   }
