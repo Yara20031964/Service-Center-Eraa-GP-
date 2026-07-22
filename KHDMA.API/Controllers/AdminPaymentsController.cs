@@ -11,6 +11,7 @@ namespace KHDMA.API.Controllers
     [Route("api/admin/payments")]
     [ApiController]
      [Authorize(Roles = "Admin")]
+    [Tags(ApiTags.AdminFinance)]
     public class AdminPaymentsController : ControllerBase
     {
         private readonly IAdminPaymentService _paymentService;

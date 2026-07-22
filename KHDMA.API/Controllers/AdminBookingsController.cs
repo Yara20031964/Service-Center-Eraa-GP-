@@ -10,6 +10,7 @@ namespace KHDMA.API.Controllers
     [Route("api/admin/bookings")]
     [ApiController]
      [Authorize(Roles = "Admin")] // will be  uncommented if Auth is setup
+    [Tags(ApiTags.AdminBookings)]
     public class AdminBookingsController : ControllerBase
     {
         private readonly IAdminBookingService _bookingService;

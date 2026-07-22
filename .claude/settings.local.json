@@ -13,7 +13,22 @@
       "Bash(git rev-list *)",
       "Bash(git *)",
       "Read(//d/Flutter/khedma/**)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(taskkill //F //IM dotnet.exe)",
+      "Bash(sed -n '/public async Task<AuthResponseDto> LoginAsync/,/^ }/p' KHDMA.Infrastructure/Services/AuthService.cs)",
+      "Bash(rm -rf C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/pwreset)",
+      "Bash(mkdir -p C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/pwreset)",
+      "Bash(dotnet new *)",
+      "Bash(dotnet add *)",
+      "Bash(powershell -NoProfile -Command ' *)",
+      "Bash(taskkill //F //PID 40600)",
+      "Bash(taskkill //F //IM KHDMA.API.exe)",
+      "Bash(curl *)",
+      "Bash(python -)",
+      "Bash(dotnet test *)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(json.dumps\\({k:\\(v if not isinstance\\(v,str\\) or len\\(v\\)<60 else v[:40]+'...'\\) for k,v in d.items\\(\\)},indent=1,default=str\\)\\)\")",
+      "Bash(python audit.py)",
+      "Bash(python -c \"import json;print\\(json.load\\(open\\('tokens.json'\\)\\)['provider']\\)\")"
     ]
   }
 }

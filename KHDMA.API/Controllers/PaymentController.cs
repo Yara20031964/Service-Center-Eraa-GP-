@@ -9,6 +9,7 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/payments")]
  [Authorize]
+[Tags(ApiTags.CustomerPayments)]
 public class PaymentController : ControllerBase
 {
     private readonly IPaymobService _paymobService;
@@ -28,8 +29,12 @@ public class PaymentController : ControllerBase
     }
 
     // POST api/payments/webhook
-    // Paymob calls this after payment
+    // Paymob calls this after payment. The gateway has no JWT, so the controller's
+    // [Authorize] has to be lifted here or every callback comes back 401 and the
+    // payment is never confirmed. Authentication is the HMAC signature instead -
+    // HandleWebhookAsync verifies it before trusting the body.
     [HttpPost("webhook")]
+    [AllowAnonymous]
     public async Task<IActionResult> Webhook(
         [FromBody] PaymentWebhookDto dto,
         [FromQuery] string hmac)

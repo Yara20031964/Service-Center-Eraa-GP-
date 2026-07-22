@@ -1,212 +1,366 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KHDMA.Infrastructure.Data
 {
+    /// <summary>
+    /// Seeds a data set that actually exercises the dispatch engine.
+    /// </summary>
+    /// <remarks>
+    /// The original seeder produced a single provider with no coordinates, State
+    /// Pending, AvailabilityStatus Offline and no ProviderService row - every one
+    /// of which the eligibility filter rejects, so a dispatch would have found
+    /// nobody. This version seeds several ONLINE, APPROVED providers near the
+    /// customer, all offering the seeded services, plus two deliberately
+    /// ineligible ones (offline, and pending approval) so the filter is visibly
+    /// doing its job.
+    ///
+    /// All coordinates cluster around downtown Cairo (30.0444, 31.2357) inside the
+    /// 10 km first dispatch round.
+    /// </remarks>
     public static class AppDbSeeder
     {
+        private const string Password = "Password123!";
+        private const string AdminPassword = "Admin123!";
+
+        // Downtown Cairo - the customer's location.
+        private const double CairoLat = 30.0444;
+        private const double CairoLng = 31.2357;
+
         public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var hasher = new PasswordHasher<ApplicationUser>();
 
-            // Seed roles
             foreach (var role in new[] { "Customer", "Provider", "Admin" })
             {
                 if (!await roleManager.RoleExistsAsync(role))
                     await roleManager.CreateAsync(new IdentityRole(role));
             }
 
-            var hasher = new PasswordHasher<ApplicationUser>();
+            await SeedAdminAsync(context, hasher);
 
-            // Seed admin separately
-            var adminExists = await context.Admins.AnyAsync();
-            if (!adminExists)
-            {
-                var adminUser = new ApplicationUser
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    UserName = "admin@khdma.com",
-                    NormalizedUserName = "ADMIN@KHDMA.COM",
-                    Email = "admin@khdma.com",
-                    NormalizedEmail = "ADMIN@KHDMA.COM",
-                    EmailConfirmed = true,
-                    FullName = "System Admin",
-                    Role = UserRole.Admin,
-                    Status = UserStatus.Active,
-                    CreateAt = DateTime.UtcNow
-                };
-                adminUser.PasswordHash = hasher.HashPassword(adminUser, "Admin123!");
-                context.Users.Add(adminUser);
-                context.Admins.Add(new Admin { ApplicationUserId = adminUser.Id });
-                await context.SaveChangesAsync();
-            }
-
-            if (await context.Users.Where(u => u.Role != UserRole.Admin).AnyAsync())
+            // Idempotent: the demo set is seeded once. Delete the database (or use a
+            // fresh Database= name) to re-seed from scratch.
+            if (await context.Customers.AnyAsync())
                 return;
 
-            // Seed test customer and provider
-            var customerUser = new ApplicationUser
+            var (plumbing, electrical, cleaning) = SeedCategories(context);
+            var services = SeedServices(context, plumbing, electrical, cleaning);
+            await context.SaveChangesAsync();
+
+            var customer = SeedCustomer(context, hasher);
+
+            // 3 eligible + 2 deliberately ineligible.
+            var providerA = SeedProvider(context, hasher, "provider@test.com", "Mohamed Hassan",
+                "Professional Plumber", CairoLat + 0.006, CairoLng + 0.004,
+                ProviderState.Active, AvailabilityStatus.Online, rating: 4.9, reviews: 87, jobs: 143);
+
+            var providerB = SeedProvider(context, hasher, "provider2@test.com", "Karim Adel",
+                "Master Plumber & Electrician", CairoLat - 0.008, CairoLng + 0.010,
+                ProviderState.Active, AvailabilityStatus.Online, rating: 4.7, reviews: 52, jobs: 61);
+
+            var providerC = SeedProvider(context, hasher, "provider3@test.com", "Sara Mostafa",
+                "Home Cleaning Specialist", CairoLat + 0.012, CairoLng - 0.006,
+                ProviderState.Active, AvailabilityStatus.Online, rating: 5.0, reviews: 30, jobs: 40);
+
+            // Filtered out: online but not approved.
+            var providerPending = SeedProvider(context, hasher, "provider.pending@test.com", "Omar Waiting",
+                "Plumber (awaiting approval)", CairoLat + 0.003, CairoLng + 0.003,
+                ProviderState.Pending, AvailabilityStatus.Online, rating: 0, reviews: 0, jobs: 0);
+
+            // Filtered out: approved but offline.
+            var providerOffline = SeedProvider(context, hasher, "provider.offline@test.com", "Hana Offline",
+                "Plumber (offline)", CairoLat + 0.004, CairoLng + 0.004,
+                ProviderState.Active, AvailabilityStatus.Offline, rating: 4.2, reviews: 12, jobs: 15);
+
+            await context.SaveChangesAsync();
+
+            // ---- who offers what ----
+            var plumbingServices = services.Where(s => s.CategoryId == plumbing.id).ToList();
+            var electricalServices = services.Where(s => s.CategoryId == electrical.id).ToList();
+            var cleaningServices = services.Where(s => s.CategoryId == cleaning.id).ToList();
+
+            OfferServices(context, providerA, plumbingServices);
+            OfferServices(context, providerB, plumbingServices.Concat(electricalServices));
+            OfferServices(context, providerC, cleaningServices);
+            OfferServices(context, providerPending, plumbingServices);
+            OfferServices(context, providerOffline, plumbingServices);
+
+            // ---- provider portfolio, certificate, service area ----
+            providerA.ServiceArea = "Nasr City, Maadi, Heliopolis";
+            providerA.Description = "Over 5 years fixing leaks, installations and emergency callouts across Cairo.";
+            providerA.ExperienceYears = 5;
+            context.ProviderPortfolioImages.Add(new ProviderPortfolioImage
+            { ProviderId = providerA.ApplicationUserId, ImageUrl = "/uploads/portfolio/sample1.jpg" });
+            context.ProviderCertificateImages.Add(new ProviderCertificateImage
+            { ProviderId = providerA.ApplicationUserId, ImageUrl = "/uploads/certificates/sample1.jpg" });
+
+            // ---- a saved address for the customer ----
+            context.Addresses.Add(new Address
             {
-                Id = Guid.NewGuid().ToString(),
-                UserName = "customer@test.com",
-                NormalizedUserName = "CUSTOMER@TEST.COM",
-                Email = "customer@test.com",
-                NormalizedEmail = "CUSTOMER@TEST.COM",
-                EmailConfirmed = true,
-                FullName = "Ahmed Customer",
-                Role = UserRole.Customer,
-                Status = UserStatus.Active,
-                CreateAt = DateTime.UtcNow.AddDays(-30)
-            };
-            customerUser.PasswordHash = hasher.HashPassword(customerUser, "Password123!");
+                UserId = customer.ApplicationUserId,
+                Label = "Home",
+                AddresssLine = "123 Gardenia St, New Cairo",
+                Latitude = CairoLat,
+                Longitude = CairoLng,
+            });
 
-            var providerUser = new ApplicationUser
+            await context.SaveChangesAsync();
+
+            // ---- history: two completed jobs for provider A, so earnings/wallet/reviews have data ----
+            var pipeRepair = plumbingServices.First();
+            SeedCompletedBooking(context, customer, providerA, pipeRepair,
+                daysAgo: 6, serviceFee: 250m);
+            SeedCompletedBooking(context, customer, providerA, pipeRepair,
+                daysAgo: 2, serviceFee: 300m);
+
+            // Reflect that work on the wallet (net of 15% commission).
+            providerA.NumberOfJobsDone += 2;
+            providerA.TotalEarnings = (250m + 300m) * 0.85m;   // 467.50
+            providerA.Balance = (250m + 300m) * 0.85m;
+
+            // ---- one future scheduled booking (unassigned), to exercise the worker ----
+            var scheduled = new Booking
             {
-                Id = Guid.NewGuid().ToString(),
-                UserName = "provider@test.com",
-                NormalizedUserName = "PROVIDER@TEST.COM",
-                Email = "provider@test.com",
-                NormalizedEmail = "PROVIDER@TEST.COM",
-                EmailConfirmed = true,
-                FullName = "Eraa Provider",
-                Role = UserRole.Provider,
-                Status = UserStatus.Active,
-                CreateAt = DateTime.UtcNow.AddDays(-40)
+                CustomerId = customer.ApplicationUserId,
+                ProviderId = null,
+                ServiceId = pipeRepair.id,
+                BookingType = BookingType.Scheduled,
+                ScheduledTime = DateTime.UtcNow.AddHours(3),
+                Address = "123 Gardenia St, New Cairo",
+                Latitude = CairoLat,
+                Longitude = CairoLng,
+                Status = BookingStatus.Pending,
+                TotalPrice = 275m,
+                Notes = "Scheduled - the worker will dispatch this ~30 min before the slot",
             };
-            providerUser.PasswordHash = hasher.HashPassword(providerUser, "Password123!");
+            context.Bookings.Add(scheduled);
+            context.Payments.Add(BuildPayment(scheduled.Id, 250m, PaymentStatus.Paid));
 
-            context.Users.AddRange(customerUser, providerUser);
+            await context.SaveChangesAsync();
+        }
 
-            var customer = new Customer { ApplicationUserId = customerUser.Id };
+        // ------------------------------------------------------------------
+        // Users
+        // ------------------------------------------------------------------
+
+        private static async Task SeedAdminAsync(AppDbContext context, PasswordHasher<ApplicationUser> hasher)
+        {
+            if (await context.Admins.AnyAsync()) return;
+
+            var admin = NewUser("admin@khdma.com", "System Admin", UserRole.Admin);
+            admin.PasswordHash = hasher.HashPassword(admin, AdminPassword);
+
+            context.Users.Add(admin);
+            context.Admins.Add(new Admin { ApplicationUserId = admin.Id });
+            await context.SaveChangesAsync();
+        }
+
+        private static Customer SeedCustomer(AppDbContext context, PasswordHasher<ApplicationUser> hasher)
+        {
+            var user = NewUser("customer@test.com", "Sara Ahmed", UserRole.Customer);
+            user.CreateAt = DateTime.UtcNow.AddDays(-30);
+            user.PasswordHash = hasher.HashPassword(user, Password);
+
+            var customer = new Customer { ApplicationUserId = user.Id };
+            context.Users.Add(user);
+            context.Customers.Add(customer);
+            return customer;
+        }
+
+        private static Provider SeedProvider(
+            AppDbContext context, PasswordHasher<ApplicationUser> hasher,
+            string email, string fullName, string jobTitle,
+            double lat, double lng, ProviderState state, AvailabilityStatus availability,
+            double rating, int reviews, int jobs)
+        {
+            var user = NewUser(email, fullName, UserRole.Provider);
+            user.CreateAt = DateTime.UtcNow.AddDays(-40);
+            user.PasswordHash = hasher.HashPassword(user, Password);
+
             var provider = new Provider
             {
-                ApplicationUserId = providerUser.Id,
-                HourlyRate = 50.0m
+                ApplicationUserId = user.Id,
+                State = state,
+                AvailabilityStatus = availability,
+                CurrentLatitude = lat,
+                CurrentLongitude = lng,
+                JobTitle = jobTitle,
+                HourlyRate = 60m,
+                Rating = rating,
+                ReviewCount = reviews,
+                NumberOfJobsDone = jobs,
             };
 
-            context.Customers.Add(customer);
+            context.Users.Add(user);
             context.Providers.Add(provider);
+            return provider;
+        }
 
-            var category = new Category
+        private static ApplicationUser NewUser(string email, string fullName, UserRole role) => new()
+        {
+            Id = Guid.NewGuid().ToString(),
+            UserName = email,
+            NormalizedUserName = email.ToUpperInvariant(),
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            EmailConfirmed = true,
+            FullName = fullName,
+            Role = role,
+            Status = UserStatus.Active,
+            PhoneNumber = "+201000000000",
+            CreateAt = DateTime.UtcNow,
+            SecurityStamp = Guid.NewGuid().ToString(),
+        };
+
+        // ------------------------------------------------------------------
+        // Catalogue
+        // ------------------------------------------------------------------
+
+        private static (Category Plumbing, Category Electrical, Category Cleaning) SeedCategories(AppDbContext context)
+        {
+            var plumbing = new Category { NameEn = "Plumbing", NameAr = "سباكة", Description = "Pipes, leaks and installations", IsActive = true };
+            var electrical = new Category { NameEn = "Electrical", NameAr = "كهرباء", Description = "Wiring, fixtures and repairs", IsActive = true };
+            var cleaning = new Category { NameEn = "Cleaning", NameAr = "تنظيف", Description = "Home and deep cleaning", IsActive = true };
+
+            context.Categories.AddRange(plumbing, electrical, cleaning);
+            return (plumbing, electrical, cleaning);
+        }
+
+        private static List<Service> SeedServices(AppDbContext context, Category plumbing, Category electrical, Category cleaning)
+        {
+            var services = new List<Service>
             {
-                id = Guid.NewGuid(),
-                NameEn = "Plumbing",
-                NameAr = "سباكة",
-                Description = "Fix pipes and water leaks"
+                NewService(plumbing.id, "Pipe Leakage Repair", "إصلاح تسرب المواسير", 250m, 45, 90, 4.9m, 87),
+                NewService(plumbing.id, "Drain Unblocking", "تسليك المجاري", 200m, 30, 60, 4.6m, 40),
+                NewService(electrical.id, "Wiring Installation", "تركيب أسلاك", 350m, 60, 120, 4.8m, 25),
+                NewService(electrical.id, "Fixture Replacement", "استبدال تجهيزات", 180m, 30, 60, 4.5m, 18),
+                NewService(cleaning.id, "Deep Home Cleaning", "تنظيف منزلي عميق", 400m, 120, 240, 5.0m, 30),
             };
-            context.Categories.Add(category);
 
-            var service = new Service
-            {
-                id = Guid.NewGuid(),
-                NameEn = "Pipe Repair",
-                NameAr = "تصليح الأنابيب",
-                FixedPrice = 150.0m,
-                CategoryId = category.id
-            };
-            context.Services.Add(service);
+            context.Services.AddRange(services);
+            return services;
+        }
 
-            var booking1 = new Booking
-            {
-                Id = Guid.NewGuid(),
-                CustomerId = customerUser.Id,
-                ProviderId = providerUser.Id,
-                ServiceId = service.id,
-                BookingType = BookingType.Scheduled,
-                ScheduledTime = DateTime.UtcNow.AddDays(-10),
-                Address = "123 Main St",
-                Latitude = 30.0444,
-                Longitude = 31.2357,
-                Status = BookingStatus.Accepted,
-                TotalPrice = 150.0m,
-                Notes = "Please bring extra pipes",
-                CreateAt = DateTime.UtcNow.AddDays(-15)
-            };
+        private static Service NewService(
+            Guid categoryId, string en, string ar, decimal price, int minDur, int maxDur, decimal rating, int reviews) => new()
+        {
+            CategoryId = categoryId,
+            NameEn = en,
+            NameAr = ar,
+            Description = $"{en} performed by a vetted professional.",
+            FixedPrice = price,
+            EstimatedDurationMin = minDur,
+            EstimatedDurationMax = maxDur,
+            Rating = rating,
+            ReviewCount = reviews,
+            IsActive = true,
+        };
 
-            var booking2 = new Booking
+        private static void OfferServices(AppDbContext context, Provider provider, IEnumerable<Service> services)
+        {
+            foreach (var service in services)
             {
-                Id = Guid.NewGuid(),
-                CustomerId = customerUser.Id,
-                ProviderId = providerUser.Id,
+                context.ProviderServices.Add(new ProviderService
+                {
+                    ProviderId = provider.ApplicationUserId,
+                    ServiceId = service.id,
+                    IsActive = true,
+                });
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // History
+        // ------------------------------------------------------------------
+
+        private static void SeedCompletedBooking(
+            AppDbContext context, Customer customer, Provider provider, Service service,
+            int daysAgo, decimal serviceFee)
+        {
+            var completedAt = DateTime.UtcNow.AddDays(-daysAgo);
+
+            var booking = new Booking
+            {
+                CustomerId = customer.ApplicationUserId,
+                ProviderId = provider.ApplicationUserId,
                 ServiceId = service.id,
                 BookingType = BookingType.Immediate,
-                ScheduledTime = DateTime.UtcNow.AddDays(-5),
-                Address = "456 Side St",
+                Address = "123 Gardenia St, New Cairo",
+                Latitude = CairoLat,
+                Longitude = CairoLng,
                 Status = BookingStatus.Completed,
-                TotalPrice = 200.0m,
-                CreateAt = DateTime.UtcNow.AddDays(-6)
+                TotalPrice = serviceFee * 1.10m,
+                CreateAt = completedAt.AddHours(-2),
+                AcceptedAt = completedAt.AddHours(-2).AddMinutes(1),
+                EnRouteAt = completedAt.AddHours(-2).AddMinutes(5),
+                ArrivedAt = completedAt.AddHours(-1),
+                StartedAt = completedAt.AddHours(-1).AddMinutes(5),
+                CompletedAt = completedAt,
             };
+            context.Bookings.Add(booking);
 
-            var booking3 = new Booking
+            context.Payments.Add(BuildPayment(booking.Id, serviceFee, PaymentStatus.Paid, completedAt));
+
+            // A trail of transitions, so the admin dashboard's dispatch-to-accept
+            // metric and GET /booking/history have something to show.
+            foreach (var (from, to, at) in new[]
             {
-                Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-                CustomerId = customerUser.Id,
-                ProviderId = providerUser.Id,
-                ServiceId = service.id,
-                BookingType = BookingType.Immediate,
-                ScheduledTime = DateTime.UtcNow.AddHours(2),
-                Address = "789 Test St",
-                Status = BookingStatus.Pending,
-                TotalPrice = 100.0m,
-                Notes = "Need this immediately! (Unpaid)",
-                CreateAt = DateTime.UtcNow
-            };
-
-            context.Bookings.AddRange(booking1, booking2, booking3);
-
-            var payment1 = new Payment
+                (BookingStatus.Pending, BookingStatus.Dispatching, booking.CreateAt),
+                (BookingStatus.Dispatching, BookingStatus.Accepted, booking.AcceptedAt!.Value),
+                (BookingStatus.Accepted, BookingStatus.EnRoute, booking.EnRouteAt!.Value),
+                (BookingStatus.EnRoute, BookingStatus.Arrived, booking.ArrivedAt!.Value),
+                (BookingStatus.Arrived, BookingStatus.InProgress, booking.StartedAt!.Value),
+                (BookingStatus.InProgress, BookingStatus.Completed, booking.CompletedAt!.Value),
+            })
             {
-                Id = Guid.NewGuid(),
-                BookingId = booking1.Id,
-                Amount = 150.0m,
-                CommissionAmount = 15.0m,
-                ProviderEarning = 135.0m,
-                PaymentStatus = PaymentStatus.Paid,
-                TransactionReference = "pi_test_123456789",
-                PaidAt = DateTime.UtcNow.AddDays(-14)
-            };
+                context.BookingStatusHistories.Add(new BookingStatusHistory
+                {
+                    BookingId = booking.Id,
+                    FromStatus = from,
+                    ToStatus = to,
+                    ChangedAt = at,
+                    ChangedByUserId = provider.ApplicationUserId,
+                });
+            }
 
-            var payment2 = new Payment
+            context.Reviews.Add(new Review
             {
-                Id = Guid.NewGuid(),
-                BookingId = booking2.Id,
-                Amount = 200.0m,
-                CommissionAmount = 20.0m,
-                ProviderEarning = 180.0m,
-                PaymentStatus = PaymentStatus.Paid,
-                TransactionReference = "pi_test_987654321",
-                PaidAt = DateTime.UtcNow.AddDays(-5)
-            };
-
-            context.Payments.AddRange(payment1, payment2);
-
-            var review = new Review
-            {
-                Id = Guid.NewGuid(),
-                BookingId = booking2.Id,
-                CustomerId = customerUser.Id,
-                ProviderId = providerUser.Id,
+                BookingId = booking.Id,
+                CustomerId = customer.ApplicationUserId,
+                ProviderId = provider.ApplicationUserId,
                 Rating = 5,
-                Comment = "Excellent and fast work!",
+                Comment = "Fixed my kitchen leak in no time. Very professional.",
                 PunctualityRating = 5,
                 WorkQualityRating = 5,
                 CleanlinesRating = 4,
-                CreateAt = DateTime.UtcNow.AddDays(-4),
-                IsHidden = false,
-                IsDeleted = false
+                CreateAt = completedAt.AddMinutes(30),
+            });
+        }
+
+        private static Payment BuildPayment(Guid bookingId, decimal serviceFee, PaymentStatus status, DateTime? paidAt = null)
+        {
+            var vat = decimal.Round(serviceFee * 0.10m, 2);
+            var commission = decimal.Round(serviceFee * 0.15m, 2);
+
+            return new Payment
+            {
+                BookingId = bookingId,
+                Amount = serviceFee + vat,
+                ServiceFee = serviceFee,
+                VatAmount = vat,
+                CommissionAmount = commission,
+                ProviderEarning = serviceFee - commission,
+                PaymentStatus = status,
+                TransactionReference = status == PaymentStatus.Paid ? $"seed_{Guid.NewGuid():N}" : null,
+                PaidAt = status == PaymentStatus.Paid ? (paidAt ?? DateTime.UtcNow) : null,
             };
-
-            context.Reviews.Add(review);
-
-            await context.SaveChangesAsync();
         }
     }
 }

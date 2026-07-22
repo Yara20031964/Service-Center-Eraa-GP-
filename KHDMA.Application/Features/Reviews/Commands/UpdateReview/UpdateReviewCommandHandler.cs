@@ -37,7 +37,7 @@ namespace KHDMA.Application.Features.Reviews.Commands.UpdateReview
                 {
                     // Reverse old rating and add new one
                     provider.Rating = (provider.Rating * provider.ReviewCount - review.Rating + request.Rating) / provider.ReviewCount;
-                    await providerRepository.UpdateAsync(provider);
+                    providerRepository.Update(provider);
                 }
             }
 
@@ -47,7 +47,7 @@ namespace KHDMA.Application.Features.Reviews.Commands.UpdateReview
             review.WorkQualityRating = request.WorkQualityRating;
             review.CleanlinesRating = request.CleanlinesRating;
 
-            await reviewRepository.UpdateAsync(review);
+            reviewRepository.Update(review);
             await _unitOfWork.CommitAsync();
 
             return true;

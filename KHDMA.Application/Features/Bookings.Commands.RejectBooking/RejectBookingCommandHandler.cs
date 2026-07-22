@@ -1,11 +1,27 @@
-using MediatR;
 using KHDMA.Application.Interfaces.Repositories;
-using KHDMA.Application.Interfaces;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
+using MediatR;
 
 namespace KHDMA.Application.Features.Bookings.Commands.RejectBooking
 {
+    /// <summary>
+    /// A provider declines a dispatched job card.
+    /// </summary>
+    /// <remarks>
+    /// Under the broadcast model this is a local, per-provider act: the booking is
+    /// offered to several providers at once and has no <c>ProviderId</c> until one
+    /// accepts, so declining changes no booking state. The card is simply dismissed
+    /// on that provider's device and the round continues for everyone else.
+    ///
+    /// The decline is recorded in <c>BookingStatusHistory</c> so the audit trail and
+    /// the admin dashboard can show who was offered a job and passed - previously
+    /// this handler returned true and wrote nothing at all.
+    ///
+    /// Note it deliberately does NOT end the round. Letting one provider's decline
+    /// cancel a broadcast would hand any single provider the ability to starve the
+    /// customer of the others.
+    /// </remarks>
     public class RejectBookingCommandHandler : IRequestHandler<RejectBookingCommand, bool>
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -17,22 +33,26 @@ namespace KHDMA.Application.Features.Bookings.Commands.RejectBooking
 
         public async Task<bool> Handle(RejectBookingCommand request, CancellationToken cancellationToken)
         {
-            var bookingRepository = _unitOfWork.Repository<Booking>();
+            var bookings = _unitOfWork.Repository<Booking>();
+            var history = _unitOfWork.Repository<BookingStatusHistory>();
 
-            var booking = await bookingRepository.GetOneAsync(b => b.Id == request.BookingId);
-            if (booking == null) throw new Exception("Booking not found");
-            
-            // If it was assigned to this provider, we might want to un-assign or mark as rejected by them
-            // For now, let's just assume we record it or allow the booking to be picked by others
-            if (booking.ProviderId == request.ProviderId && booking.Status == BookingStatus.Dispatching)
+            var booking = await bookings.GetOneAsync(b => b.Id == request.BookingId);
+            if (booking is null) throw new Exception("Booking not found");
+
+            // Nothing to decline once someone has won the job.
+            if (booking.Status != BookingStatus.Dispatching || booking.ProviderId is not null)
+                return false;
+
+            await history.CreateAsync(new BookingStatusHistory
             {
-                // In a real system, you'd probably have a BookingStatusHistory or a list of RejectedProviderIds
-                // For simplified logic:
-                // booking.ProviderId = null; // So other providers can see it
-                // await bookingRepository.UpdateAsync(booking);
-                // await _unitOfWork.CommitAsync();
-            }
+                BookingId = booking.Id,
+                FromStatus = BookingStatus.Dispatching,
+                ToStatus = BookingStatus.Dispatching,   // unchanged - this records who passed
+                ChangedByUserId = request.ProviderId,
+                Reason = "Provider declined the job card",
+            });
 
+            await _unitOfWork.CommitAsync();
             return true;
         }
     }

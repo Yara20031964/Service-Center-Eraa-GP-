@@ -9,6 +9,7 @@ namespace KHDMA.API.Controllers
     [Route("api/payments")]
     [ApiController]
      [Authorize]  // Uncomment when authentication is ready
+    [Tags(ApiTags.CustomerPayments)]
     public class PaymentsController : ControllerBase
     {
         private readonly IStripePaymentService _stripeService;

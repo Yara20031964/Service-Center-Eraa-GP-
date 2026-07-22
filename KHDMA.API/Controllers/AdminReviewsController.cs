@@ -9,6 +9,7 @@ namespace KHDMA.API.Controllers
     [Route("api/admin/reviews")]
     [ApiController]
      [Authorize(Roles = "Admin")]
+    [Tags(ApiTags.AdminModeration)]
     public class AdminReviewsController : ControllerBase
     {
         private readonly IAdminReviewService _reviewService;

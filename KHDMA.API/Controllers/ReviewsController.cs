@@ -14,6 +14,7 @@ namespace KHDMA.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [Tags(ApiTags.CustomerReviews)]
     public class ReviewsController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -66,6 +67,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{id}/reply")]
+        [Tags(ApiTags.ProviderReviews)]
         public async Task<IActionResult> Reply(Guid id, [FromBody] string reply)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -84,6 +86,7 @@ namespace KHDMA.API.Controllers
 
         [HttpGet("provider/{providerId}")]
         [AllowAnonymous]
+        [Tags(ApiTags.PublicCatalog)]
         public async Task<IActionResult> GetByProvider(string providerId, [FromQuery] int page = 1)
         {
             var query = new GetProviderReviewsQuery

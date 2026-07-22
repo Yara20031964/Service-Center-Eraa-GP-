@@ -1,4 +1,5 @@
 using Application.DTOs.Admin;
+using KHDMA.Application.DTOs.Admin;
 using Domain.Common;
 
 namespace KHDMA.Application.Interfaces.Services.Admin;

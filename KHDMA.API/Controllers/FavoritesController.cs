@@ -12,6 +12,7 @@ namespace KHDMA.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [Tags(ApiTags.CustomerFavorites)]
     public class FavoritesController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -50,7 +51,8 @@ namespace KHDMA.API.Controllers
             };
 
             var result = await _mediator.Send(query);
-            return Ok(result);
+            // Ok() would pin the HTTP status to 200 even when the envelope says 404.
+            return StatusCode(result.StatusCode, result);
         }
     }
 }

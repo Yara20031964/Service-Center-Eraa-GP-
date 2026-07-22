@@ -9,6 +9,7 @@ namespace KHDMA.API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[Tags(ApiTags.CommonAuth)]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _service;

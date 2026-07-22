@@ -7,6 +7,7 @@ namespace API.Controllers.Admin;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminFinance)]
 public class AdminFinanceController : ControllerBase
 {
     private readonly IAdminFinanceService _service;

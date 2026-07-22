@@ -8,6 +8,7 @@ namespace API.Controllers.Admin;
 [ApiController]
 [Route("api/admin/commission")]
  [Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminFinance)]
 public class CommissionController : ControllerBase
 {
     private readonly ICommissionService _service;

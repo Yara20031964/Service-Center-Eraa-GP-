@@ -75,7 +75,7 @@ namespace KHDMA.Infrastructure.Services.Admin
                 .Include(b => b.Review)
                 .FirstOrDefaultAsync(b => b.Id == bookingId);
 
-            if (booking == null) return ApiResponse<BookingDetailDto>.Fail("Booking not found");
+            if (booking == null) return ApiResponse<BookingDetailDto>.NotFound("Booking not found");
 
             var dto = new BookingDetailDto
             {
@@ -131,7 +131,7 @@ namespace KHDMA.Infrastructure.Services.Admin
         public async Task<ApiResponse<bool>> CancelBookingAsync(Guid bookingId, string reason)
         {
             var booking = await _context.Bookings.FindAsync(bookingId);
-            if (booking == null) return ApiResponse<bool>.Fail("Booking not found");
+            if (booking == null) return ApiResponse<bool>.NotFound("Booking not found");
 
             booking.Status = BookingStatus.Cancelled;
             booking.CancelReason = reason;
@@ -143,7 +143,7 @@ namespace KHDMA.Infrastructure.Services.Admin
         public async Task<ApiResponse<object>> GetBookingStatusHistoryAsync(Guid bookingId)
         {
             var booking = await _context.Bookings.FindAsync(bookingId);
-            if (booking == null) return ApiResponse<object>.Fail("Booking not found");
+            if (booking == null) return ApiResponse<object>.NotFound("Booking not found");
 
             var history = new 
             {

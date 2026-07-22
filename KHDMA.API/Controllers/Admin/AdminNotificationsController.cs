@@ -8,6 +8,7 @@ namespace KHDMA.API.Controllers.Admin
     [ApiController]
     [Route("api/admin/notifications")]
     [Authorize(Roles = "Admin")]
+    [Tags(ApiTags.AdminNotifications)]
     public class AdminNotificationsController : ControllerBase
     {
         private readonly INotificationService _notificationService;

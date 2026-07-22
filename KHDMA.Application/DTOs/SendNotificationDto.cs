@@ -10,7 +10,8 @@ namespace KHDMA.Application.DTOs
     {
         public string UserId { get; set; }
 
-        public Guid BookingId { get; set; }
+        /// <summary>Optional - omit for account-level notices not tied to a booking.</summary>
+        public Guid? BookingId { get; set; }
 
         public string Title { get; set; }
 

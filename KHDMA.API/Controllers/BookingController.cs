@@ -9,6 +9,8 @@ using KHDMA.Application.Features.Bookings.Queries.GetAdminBookings;
 using KHDMA.Application.Features.Bookings.Queries.ExportBookings;
 using System.Security.Claims;
 using KHDMA.Application.DTOs.Booking;
+using KHDMA.Application.DTOs.RealTime;
+using KHDMA.Domain.Enums;
 using Domain.Common;
 
 namespace KHDMA.API.Controllers
@@ -16,6 +18,10 @@ namespace KHDMA.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    // Default section for this controller. The provider-side lifecycle actions and
+    // the three admin-only ones override it with their own [Tags] below, because a
+    // single controller here serves all three audiences.
+    [Tags(ApiTags.CustomerBookings)]
     public class BookingController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -25,29 +31,55 @@ namespace KHDMA.API.Controllers
             _mediator = mediator;
         }
 
+        /// <summary>
+        /// Dispatch booking (SRS 2.2): no provider is chosen; the backend broadcasts
+        /// to nearby eligible providers and the first to accept wins.
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateBookingDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<Guid>.Unauthorized());
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<CreateBookingResultDto>.Unauthorized());
 
-            var command = new CreateBookingCommand
+            var result = await _mediator.Send(ToCommand(dto, userId, providerId: null));
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Direct booking: the customer picked this provider from their profile page.
+        /// Offered to that provider only - it never falls back to a broadcast.
+        /// </summary>
+        [HttpPost("direct")]
+        public async Task<IActionResult> CreateDirect([FromBody] CreateDirectBookingDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<CreateBookingResultDto>.Unauthorized());
+
+            if (string.IsNullOrWhiteSpace(dto.ProviderId))
+                return BadRequest(ApiResponse<CreateBookingResultDto>.Fail("providerId is required"));
+
+            var result = await _mediator.Send(ToCommand(dto, userId, dto.ProviderId));
+            return StatusCode(result.StatusCode, result);
+        }
+
+        // Note: no price is copied from the request. The server snapshots
+        // Service.FixedPrice - see CreateBookingDto.
+        private static CreateBookingCommand ToCommand(CreateBookingDto dto, string customerId, string? providerId)
+            => new()
             {
-                CustomerId = userId,
-                ProviderId = dto.ProviderId,
+                CustomerId = customerId,
+                ProviderId = providerId,
                 ServiceId = dto.ServiceId,
                 BookingType = dto.BookingType,
                 ScheduledTime = dto.ScheduledTime,
                 Address = dto.Address,
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
-                TotalPrice = dto.TotalPrice,
-                Notes = dto.Notes
+                AddressId = dto.AddressId,
+                Notes = dto.Notes,
             };
-
-            var id = await _mediator.Send(command);
-            return CreatedAtAction(nameof(GetHistory), new { id }, ApiResponse<Guid>.Created(id));
-        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Cancel(Guid id, [FromBody] string reason)
@@ -69,6 +101,7 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("admin/{id}/cancel")]
         [Authorize(Roles = "Admin")]
+        [Tags(ApiTags.AdminBookings)]
         public async Task<IActionResult> AdminCancel(Guid id, [FromBody] string reason)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -85,7 +118,12 @@ namespace KHDMA.API.Controllers
             return result ? Ok(ApiResponse<bool>.Ok(true, "Admin cancelled successfully")) : NotFound(ApiResponse<bool>.NotFound());
         }
 
+        /// <summary>
+        /// Bookings for whoever the token belongs to - the ones a customer raised,
+        /// or the ones a provider was assigned.
+        /// </summary>
         [HttpGet("history")]
+        [Tags(ApiTags.CommonBookings)]
         public async Task<IActionResult> GetHistory([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -106,6 +144,7 @@ namespace KHDMA.API.Controllers
 
         [HttpGet("admin")]
         [Authorize(Roles = "Admin")]
+        [Tags(ApiTags.AdminBookings)]
         public async Task<IActionResult> GetAdminList([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string? customerId, [FromQuery] string? providerId, [FromQuery] int page = 1)
         {
             var query = new GetAdminBookingsQuery
@@ -123,6 +162,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{id}/complete")]
+        [Tags(ApiTags.ProviderJobs)]
         public async Task<IActionResult> Complete(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -138,11 +178,17 @@ namespace KHDMA.API.Controllers
             return result ? Ok(ApiResponse<bool>.Ok(true, "Booking completed successfully")) : BadRequest(ApiResponse<bool>.Fail("Failed to complete booking"));
         }
 
+        /// <summary>
+        /// Claim a dispatched job. Exactly one concurrent caller succeeds;
+        /// the rest get 409 and should dismiss the card silently.
+        /// </summary>
         [HttpPost("{id}/accept")]
+        [Tags(ApiTags.ProviderJobs)]
         public async Task<IActionResult> Accept(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized(ApiResponse<bool>.Unauthorized());
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<AcceptResultDto>.Unauthorized());
 
             var command = new KHDMA.Application.Features.Bookings.Commands.AcceptBooking.AcceptBookingCommand
             {
@@ -151,10 +197,11 @@ namespace KHDMA.API.Controllers
             };
 
             var result = await _mediator.Send(command);
-            return result ? Ok(ApiResponse<bool>.Ok(true, "Booking accepted successfully")) : BadRequest(ApiResponse<bool>.Fail("Failed to accept booking"));
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPost("{id}/reject")]
+        [Tags(ApiTags.ProviderJobs)]
         public async Task<IActionResult> Reject(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -171,6 +218,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{id}/mark-en-route")]
+        [Tags(ApiTags.ProviderJobs)]
         public async Task<IActionResult> MarkEnRoute(Guid id, [FromQuery] string? eta)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -189,6 +237,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{id}/mark-arrived")]
+        [Tags(ApiTags.ProviderJobs)]
         public async Task<IActionResult> MarkArrived(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -206,6 +255,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{id}/mark-in-progress")]
+        [Tags(ApiTags.ProviderJobs)]
         public async Task<IActionResult> MarkInProgress(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -224,6 +274,7 @@ namespace KHDMA.API.Controllers
 
         [HttpGet("admin/export")]
         [Authorize(Roles = "Admin")]
+        [Tags(ApiTags.AdminBookings)]
         public async Task<IActionResult> Export([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string format = "csv")
         {
             var query = new ExportBookingsQuery

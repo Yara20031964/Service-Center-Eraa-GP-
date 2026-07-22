@@ -9,6 +9,7 @@ namespace API.Controllers.Admin;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminModeration)]
 public class AdminModerationController : ControllerBase
 {
     private readonly IAdminModerationService _service;

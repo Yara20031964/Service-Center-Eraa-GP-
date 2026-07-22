@@ -9,6 +9,7 @@ namespace KHDMA.API.Controllers;
 [ApiController]
 [Route("api/profile")]
 [Authorize]
+[Tags(ApiTags.CommonProfile)]
 public class ProfileController : ControllerBase
 {
     private readonly IProfileService _service;

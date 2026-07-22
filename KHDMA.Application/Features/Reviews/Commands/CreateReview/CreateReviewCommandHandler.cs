@@ -52,7 +52,7 @@ namespace KHDMA.Application.Features.Reviews.Commands.CreateReview
                 // Calculating weighted average: (CurrentRating * ReviewCount + NewRating) / (ReviewCount + 1)
                 provider.Rating = (provider.Rating * provider.ReviewCount + request.Rating) / (provider.ReviewCount + 1);
                 provider.ReviewCount++;
-                await providerRepository.UpdateAsync(provider);
+                providerRepository.Update(provider);
             }
 
             await _unitOfWork.CommitAsync();

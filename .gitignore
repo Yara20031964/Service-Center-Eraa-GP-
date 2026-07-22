@@ -9,6 +9,8 @@
 # ASP.NET Core appsettings with sensitive data (connection strings, secrets)
 appsettings.json
 appsettings.*.json
+# ...but keep the placeholder template, which documents the required keys
+!appsettings.Example.json
 
 # User-specific files
 *.rsuser

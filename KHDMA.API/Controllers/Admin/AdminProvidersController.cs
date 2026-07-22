@@ -8,6 +8,7 @@ namespace API.Controllers.Admin;
 [ApiController]
 [Route("api/admin/users")]
  [Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminProviders)]
 public class AdminProvidersController : ControllerBase
 {
     private readonly IAdminProviderService _service;

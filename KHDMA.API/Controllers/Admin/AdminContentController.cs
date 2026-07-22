@@ -9,6 +9,7 @@ namespace API.Controllers.Admin;
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminContent)]
 public class AdminContentController : ControllerBase
 {
     private readonly IAdminContentService _service;

@@ -30,7 +30,7 @@ namespace KHDMA.Application.Features.Reviews.Commands.ReplyToReview
             review.ProviderReply = request.Reply;
             review.ProviderReplyAt = DateTime.UtcNow;
 
-            await reviewRepository.UpdateAsync(review);
+            reviewRepository.Update(review);
             await _unitOfWork.CommitAsync();
 
             return true;

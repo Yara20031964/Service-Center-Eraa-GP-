@@ -4,7 +4,8 @@ namespace KHDMA.Domain.Entities
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string UserId { get; set; } // Could be CustomerId or ProviderId
-        public Guid BookingId { get; set; }
+        /// <summary>Null for account-level notifications that are not tied to a booking.</summary>
+        public Guid? BookingId { get; set; }
         public string Type { get; set; } // e.g., "BookingUpdate", "NewMessage", "PaymentStatus"
         public string Title { get; set; }
         public string Body { get; set; }

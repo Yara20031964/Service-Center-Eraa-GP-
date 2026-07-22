@@ -27,8 +27,11 @@ namespace KHDMA.Application.Features.Bookings.Queries.GetBookingHistory
                 b => b.Provider.ApplicationUser
             };
 
+            // Serves both sides of a booking: a customer sees the ones they raised,
+            // a provider the ones they were assigned. Before this the filter was
+            // CustomerId only, so providers got an empty list from their own history.
             var bookings = await bookingRepository.GetAsync(
-                expression: b => b.CustomerId == request.UserId,
+                expression: b => b.CustomerId == request.UserId || b.ProviderId == request.UserId,
                 includes: includes
             );
 
@@ -51,11 +54,17 @@ namespace KHDMA.Application.Features.Bookings.Queries.GetBookingHistory
                 .OrderByDescending(b => b.CreateAt)
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
+                // The rows are already materialised, so drop out of the expression
+                // tree here - it is what lets the null-conditional below compile.
+                .AsEnumerable()
                 .Select(b => new BookingListDto
                 {
                     Id = b.Id,
                     ServiceName = b.Service.NameEn,
-                    ProviderName = b.Provider.ApplicationUser.FullName,
+                    // Null until a provider accepts - a Pending or Dispatching booking
+                    // has none, and an unguarded dereference here threw instead of
+                    // returning null.
+                    ProviderName = b.Provider?.ApplicationUser?.FullName,
                     Status = b.Status,
                     ScheduledTime = b.ScheduledTime,
                     TotalPrice = b.TotalPrice,
