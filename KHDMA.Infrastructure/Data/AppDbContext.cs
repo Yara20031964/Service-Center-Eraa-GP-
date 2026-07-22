@@ -199,6 +199,11 @@ namespace KHDMA.Infrastructure.Data
                     UpdatedBy = "system"
                 }
             );
+            modelBuilder.Entity<Notification>()
+               .HasIndex(n => new { n.UserId, n.IsRead });
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.Type);
 
         }
     }

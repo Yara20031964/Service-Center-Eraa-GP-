@@ -1,9 +1,10 @@
-using System.Text;
 using Application.Services.Admin;
+using KHDMA.API.Hubs;
 using KHDMA.Application.Interfaces.Repositories;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
+using KHDMA.Infrastructure;
 using KHDMA.Infrastructure.Data;
 using KHDMA.Infrastructure.Repositories;
 using KHDMA.Infrastructure.Services;
@@ -11,8 +12,10 @@ using KHDMA.Infrastructure.Services.Admin;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +45,13 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
+builder.Services.AddLocalization();
+builder.Services.Configure<RequestLocalizationOptions>(options =>  {
+    var supportedCultures= new[] { "en", "ar" };
+    options.SetDefaultCulture("en")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+});
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -57,9 +67,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();//
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>();//
+builder.Services.AddSignalR();//
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+ 
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "KHDMA API", Version = "v1" });
@@ -85,13 +99,15 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-
+app.MapHub<NotificationHub>("/hubs/notifications");//
+app.UseRequestLocalization();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health");//
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
