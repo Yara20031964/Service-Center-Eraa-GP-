@@ -12,7 +12,8 @@
       "Bash(grep -v \"^\\\\s*//\")",
       "Bash(git rev-list *)",
       "Bash(git *)",
-      "Read(//d/Flutter/khedma/**)"
+      "Read(//d/Flutter/khedma/**)",
+      "Bash(gh pr *)"
     ]
   }
 }
