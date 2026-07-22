@@ -155,5 +155,32 @@ namespace KHDMA.Infrastructure.Services.Admin
             };
             return ApiResponse<object>.Ok(history);
         }
+
+        public async Task<PagedResponse<ChatTranscriptDto>> GetChatTranscriptAsync(Guid bookingId, int page, int pageSize)
+        {
+            var query = _context.ChatMessages
+                .Include(m => m.Sender)
+                .Where(m => m.BookingId == bookingId)
+                .AsQueryable();
+
+            int totalCount = await query.CountAsync();
+
+            var messages = await query
+                .OrderBy(m => m.SentAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(m => new ChatTranscriptDto
+                {
+                    MessageId = m.Id,
+                    SenderName = m.Sender.FullName,
+                    MessageText = m.MessageText ?? "",
+                    MessageType = m.MessageType,
+                    SentAt = m.SentAt,
+                    AttachmentUrl = m.AttachmentUrl
+                })
+                .ToListAsync();
+
+            return PagedResponse<ChatTranscriptDto>.Ok(messages, totalCount, page, pageSize);
+        }
     }
 }

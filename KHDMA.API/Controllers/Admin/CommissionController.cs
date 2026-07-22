@@ -1,12 +1,13 @@
 ﻿using Application.DTOs.Admin;
-using Application.Services.Admin;
+using KHDMA.Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/commission")]
-// [Authorize(Roles = "Admin")]
+ [Authorize(Roles = "Admin")]
 public class CommissionController : ControllerBase
 {
     private readonly ICommissionService _service;

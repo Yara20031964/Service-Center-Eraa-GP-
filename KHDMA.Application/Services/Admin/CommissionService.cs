@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Admin;
 using Domain.Common;
 using KHDMA.Application.Interfaces.Repositories;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Domain.Entities;
 
 namespace Application.Services.Admin;
