@@ -7,7 +7,10 @@
       "Bash(git check-ignore *)",
       "Bash(dotnet ef *)",
       "Bash(dotnet build *)",
-      "Bash(dotnet run *)"
+      "Bash(dotnet run *)",
+      "Bash(python -c ' *)",
+      "Bash(grep -v \"^\\\\s*//\")",
+      "Read(//d/Flutter/khedma/**)"
     ]
   }
 }
