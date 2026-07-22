@@ -150,14 +150,79 @@ namespace KHDMA.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("KHDMA.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Timestamp");
+
+                    b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.Banner", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Banners");
+                });
+
             modelBuilder.Entity("KHDMA.Domain.Entities.Booking", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Address")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ArrivedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("BookingType")
                         .HasColumnType("int");
@@ -165,12 +230,30 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<string>("CancelReason")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreateAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DispatchDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("DispatchRadiusKm")
+                        .HasColumnType("float");
+
+                    b.Property<int>("DispatchRoundCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EnRouteAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<double?>("Latitude")
                         .HasColumnType("float");
@@ -182,14 +265,19 @@ namespace KHDMA.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ProviderId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ProviderNotifiedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("ScheduledTime")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("ServiceId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -203,9 +291,88 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.HasIndex("ProviderId");
 
+                    b.HasIndex("ScheduledTime");
+
                     b.HasIndex("ServiceId");
 
+                    b.HasIndex("Status");
+
+                    b.HasIndex("CustomerId", "Status");
+
+                    b.HasIndex("ProviderId", "Status");
+
+                    b.HasIndex("Status", "CreateAt");
+
+                    b.HasIndex("Status", "DispatchDeadline");
+
                     b.ToTable("Bookings");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.BookingStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ChangedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("FromStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId", "ChangedAt");
+
+                    b.ToTable("BookingStatusHistories");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.CancellationPolicy", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CancellationFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("FreeCancelWindowMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CancellationPolicies");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CancellationFee = 20m,
+                            FreeCancelWindowMinutes = 10,
+                            LastUpdatedAt = new DateTime(2026, 4, 29, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "system"
+                        });
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Category", b =>
@@ -270,6 +437,8 @@ namespace KHDMA.Infrastructure.Migrations
                     b.HasIndex("BookingId");
 
                     b.HasIndex("SenderId");
+
+                    b.HasIndex("BookingId", "SentAt");
 
                     b.ToTable("ChatMessages");
                 });
@@ -362,7 +531,7 @@ namespace KHDMA.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("BookingId")
+                    b.Property<Guid?>("BookingId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsRead")
@@ -380,7 +549,7 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -390,9 +559,50 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.HasIndex("BookingId");
 
+                    b.HasIndex("Type");
+
                     b.HasIndex("UserId");
 
+                    b.HasIndex("UserId", "IsRead");
+
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.NotificationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BodyAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BodyEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NotificationTemplates");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Payment", b =>
@@ -419,15 +629,58 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<decimal>("ProviderEarning")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("ServiceFee")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("TransactionReference")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("BookingId")
                         .IsUnique();
 
+                    b.HasIndex("PaymentStatus", "PaidAt");
+
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.Payout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProviderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Reference")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderId", "Status");
+
+                    b.ToTable("Payouts");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Provider", b =>
@@ -437,6 +690,9 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.Property<int>("AvailabilityStatus")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<double?>("CurrentLatitude")
                         .HasColumnType("float");
@@ -471,7 +727,14 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<int>("State")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("TotalEarnings")
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("ApplicationUserId");
+
+                    b.HasIndex("CurrentLatitude", "CurrentLongitude");
+
+                    b.HasIndex("State", "AvailabilityStatus");
 
                     b.ToTable("Providers");
                 });
@@ -541,7 +804,7 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.HasIndex("ProviderId");
 
-                    b.HasIndex("ServiceId");
+                    b.HasIndex("ServiceId", "IsActive");
 
                     b.ToTable("ProviderServices");
                 });
@@ -610,6 +873,12 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<string>("ProviderId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderReply")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ProviderReplyAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("PunctualityRating")
                         .HasColumnType("int");
@@ -866,8 +1135,7 @@ namespace KHDMA.Infrastructure.Migrations
                     b.HasOne("KHDMA.Domain.Entities.Provider", "Provider")
                         .WithMany("Bookings")
                         .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("KHDMA.Domain.Entities.Service", "Service")
                         .WithMany("Bookings")
@@ -880,6 +1148,17 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Navigation("Provider");
 
                     b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.BookingStatusHistory", b =>
+                {
+                    b.HasOne("KHDMA.Domain.Entities.Booking", "Booking")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.ChatMessage", b =>
@@ -955,8 +1234,7 @@ namespace KHDMA.Infrastructure.Migrations
                     b.HasOne("KHDMA.Domain.Entities.Booking", "Booking")
                         .WithMany("Notifications")
                         .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("KHDMA.Domain.Entities.ApplicationUser", "User")
                         .WithMany("Notifications")
@@ -978,6 +1256,17 @@ namespace KHDMA.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Booking");
+                });
+
+            modelBuilder.Entity("KHDMA.Domain.Entities.Payout", b =>
+                {
+                    b.HasOne("KHDMA.Domain.Entities.Provider", "Provider")
+                        .WithMany()
+                        .HasForeignKey("ProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Provider");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Provider", b =>
@@ -1165,6 +1454,8 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Navigation("Payment");
 
                     b.Navigation("Review");
+
+                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("KHDMA.Domain.Entities.Category", b =>

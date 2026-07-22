@@ -26,7 +26,7 @@ namespace KHDMA.Infrastructure.Services.Payment
         public async Task<ApiResponse<string>> CreatePaymentIntentAsync(Guid bookingId)
         {
             var booking = await _context.Bookings.FindAsync(bookingId);
-            if (booking == null) return ApiResponse<string>.Fail("Booking not found");
+            if (booking == null) return ApiResponse<string>.NotFound("Booking not found");
 
             var payment = await _context.Payments.FirstOrDefaultAsync(p => p.BookingId == bookingId);
 

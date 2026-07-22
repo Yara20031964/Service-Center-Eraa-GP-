@@ -1,12 +1,14 @@
 ﻿using Application.DTOs.Admin;
-using Application.Services.Admin;
+using KHDMA.Application.Interfaces.Services.Admin;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/users")]
-// [Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminAdmins)]
 public class AdminUsersController : ControllerBase
 {
     private readonly IAdminUserService _service;

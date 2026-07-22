@@ -1,11 +1,14 @@
 using KHDMA.Application.DTOs.Catalog;
 using KHDMA.Application.Interfaces.Services.Admin;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KHDMA.API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/services")]
+[Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminCatalog)]
 public class AdminServicesController : ControllerBase
 {
     private readonly IAdminServiceService _service;

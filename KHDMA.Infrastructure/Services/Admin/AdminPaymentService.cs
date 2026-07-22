@@ -70,7 +70,7 @@ namespace KHDMA.Infrastructure.Services.Admin
                 .Include(p => p.Booking.Provider.ApplicationUser)
                 .FirstOrDefaultAsync(p => p.Id == paymentId);
 
-            if (payment == null) return ApiResponse<PaymentDto>.Fail("Payment not found");
+            if (payment == null) return ApiResponse<PaymentDto>.NotFound("Payment not found");
 
             var dto = new PaymentDto
             {
@@ -95,7 +95,7 @@ namespace KHDMA.Infrastructure.Services.Admin
                 .Include(p => p.Booking)
                 .FirstOrDefaultAsync(p => p.Id == refundDto.PaymentId);
                 
-            if (payment == null) return ApiResponse<bool>.Fail("Payment not found");
+            if (payment == null) return ApiResponse<bool>.NotFound("Payment not found");
 
             if (!string.IsNullOrEmpty(payment.TransactionReference))
             {

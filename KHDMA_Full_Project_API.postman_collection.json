@@ -1,0 +1,112 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-4a5b-b6c7-d8e9f0a1b2c3",
+		"name": "KHDMA Full Project API",
+		"description": "Comprehensive collection for KHDMA project covering Auth, Bookings, Reviews, Favorites, Admin Tools, and Notifications.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Authentication",
+			"item": [
+				{
+					"name": "Register Customer",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "FullName", "value": "Customer Name", "type": "text" },
+								{ "key": "Email", "value": "customer@example.com", "type": "text" },
+								{ "key": "Password", "value": "P@ssword123", "type": "text" },
+								{ "key": "ConfirmPassword", "value": "P@ssword123", "type": "text" },
+								{ "key": "Phone", "value": "01000000000", "type": "text" }
+							]
+						},
+						"url": { "raw": "{{baseUrl}}/api/auth/register/customer", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register", "customer"] }
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"customer@example.com\",\n    \"password\": \"P@ssword123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "1. Booking Process",
+			"item": [
+				{
+					"name": "Create Booking",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"providerId\": \"{{providerId}}\",\n    \"serviceId\": \"{{serviceId}}\",\n    \"bookingType\": 1,\n    \"scheduledTime\": \"2026-05-30T15:00:00Z\",\n    \"totalPrice\": 200.00,\n    \"address\": \"Tagamoa, Cairo\",\n    \"notes\": \"Min 2 hours lead time applied\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/booking", "host": ["{{baseUrl}}"], "path": ["api", "booking"] }
+					}
+				},
+				{ "name": "Accept (Provider)", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/accept" } },
+				{ "name": "Reject (Provider)", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/reject" } },
+				{ "name": "Mark En Route", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/mark-en-route?eta=15 mins" } },
+				{ "name": "Mark Arrived", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/mark-arrived" } },
+				{ "name": "Mark In Progress", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/mark-in-progress" } },
+				{ "name": "Complete & Record Earnings", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/complete" } },
+				{ "name": "Retry Payment Intent", "request": { "method": "POST", "url": "{{baseUrl}}/api/booking/{{bookingId}}/retry-payment" } }
+			]
+		},
+		{
+			"name": "2. Reviews & Feedback",
+			"item": [
+				{ "name": "Submit Review", "request": { "method": "POST", "body": { "mode": "raw", "raw": "{\n    \"bookingId\": \"{{bookingId}}\",\n    \"rating\": 5,\n    \"comment\": \"Amazing!\",\n    \"workQualityRating\": 5\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/reviews" } },
+				{ "name": "Reply (Provider)", "request": { "method": "POST", "body": { "mode": "raw", "raw": "\"Thanks! Glad you liked it.\"", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/api/reviews/{{reviewId}}/reply" } },
+				{ "name": "List Provider Reviews", "request": { "method": "GET", "url": "{{baseUrl}}/api/reviews/provider/{{providerId}}?page=1" } }
+			]
+		},
+		{
+			"name": "3. Favorites Management",
+			"item": [
+				{ "name": "Toggle", "request": { "method": "POST", "url": "{{baseUrl}}/api/favorites/{{providerId}}" } },
+				{ "name": "Get My List", "request": { "method": "GET", "url": "{{baseUrl}}/api/favorites" } }
+			]
+		},
+		{
+			"name": "4. Notifications",
+			"item": [
+				{ "name": "Get My History", "request": { "method": "GET", "url": "{{baseUrl}}/api/notifications/user/{{userId}}" } },
+				{ "name": "Mark All as Read", "request": { "method": "PUT", "url": "{{baseUrl}}/api/notifications/read-all/{{userId}}" } },
+				{ "name": "Delete Notification", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/notifications/{{notifId}}" } }
+			]
+		},
+		{
+			"name": "5. Admin Panel",
+			"item": [
+				{ "name": "Full Booking Details (SRS 9.3)", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/bookings/{{bookingId}}" } },
+				{ "name": "Chat History Transcript", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/bookings/{{bookingId}}/transcript" } },
+				{ "name": "Provider Performance Stats", "request": { "method": "GET", "url": "{{baseUrl}}/api/admin/users/providers/{{providerId}}/performance" } },
+				{ "name": "Export Data (CSV/Excel)", "request": { "method": "GET", "url": "{{baseUrl}}/api/booking/admin/export?format=csv" } }
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl", "value": "https://localhost:7000" },
+		{ "key": "bookingId", "value": "" },
+		{ "key": "providerId", "value": "" },
+		{ "key": "userId", "value": "" },
+		{ "key": "reviewId", "value": "" },
+		{ "key": "notifId", "value": "" },
+		{ "key": "serviceId", "value": "" }
+	]
+}

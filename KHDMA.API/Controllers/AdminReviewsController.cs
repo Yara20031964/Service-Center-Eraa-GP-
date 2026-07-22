@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using KHDMA.Application.Interfaces.Services.Admin;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KHDMA.API.Controllers
 {
     [Route("api/admin/reviews")]
     [ApiController]
-    // [Authorize(Roles = "Admin")]
+     [Authorize(Roles = "Admin")]
+    [Tags(ApiTags.AdminModeration)]
     public class AdminReviewsController : ControllerBase
     {
         private readonly IAdminReviewService _reviewService;

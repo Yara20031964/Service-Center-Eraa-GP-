@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using KHDMA.Domain.Entities;
 
@@ -7,7 +7,10 @@ namespace KHDMA.Infrastructure.Data
     public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
+        public DbSet<Banner> Banners { get; set; }
+        public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+        public DbSet<CancellationPolicy> CancellationPolicies { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Provider> Providers { get; set; }
         public DbSet<Admin> Admins { get; set; }
@@ -28,6 +31,8 @@ namespace KHDMA.Infrastructure.Data
         public DbSet<CustomerFavoriteProvider> CustomerFavoriteProviders { get; set; }
         public DbSet<ProviderPortfolioImage> ProviderPortfolioImages { get; set; }
         public DbSet<ProviderCertificateImage> ProviderCertificateImages { get; set; }
+        public DbSet<BookingStatusHistory> BookingStatusHistories { get; set; }
+        public DbSet<Payout> Payouts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -83,10 +88,12 @@ namespace KHDMA.Infrastructure.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Provider → Booking 1:N
+            // Optional: a Pending/Dispatching booking has no provider yet.
             modelBuilder.Entity<Booking>()
                 .HasOne(b => b.Provider)
                 .WithMany(p => p.Bookings)
                 .HasForeignKey(b => b.ProviderId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Service → Booking 1:N
@@ -190,6 +197,33 @@ namespace KHDMA.Infrastructure.Data
                 .HasOne(n => n.User)
                 .WithMany(u => u.Notifications)
                 .HasForeignKey(n => n.UserId);
+
+            // Booking → Notification 1:N (optional - account-level notices have no booking)
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Booking)
+                .WithMany(b => b.Notifications)
+                .HasForeignKey(n => n.BookingId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Booking → BookingStatusHistory 1:N
+            modelBuilder.Entity<BookingStatusHistory>()
+                .HasOne(h => h.Booking)
+                .WithMany(b => b.StatusHistory)
+                .HasForeignKey(h => h.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Provider → Payout 1:N
+            modelBuilder.Entity<Payout>()
+                .HasOne(p => p.Provider)
+                .WithMany()
+                .HasForeignKey(p => p.ProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Money columns - decimal(18,2) so SQL Server does not silently truncate.
+            modelBuilder.Entity<Payout>().Property(p => p.Amount).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Payment>().Property(p => p.ServiceFee).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Payment>().Property(p => p.VatAmount).HasColumnType("decimal(18,2)");
             modelBuilder.Entity<CommissionSettings>().HasData(
                 new CommissionSettings
                 {
@@ -199,7 +233,45 @@ namespace KHDMA.Infrastructure.Data
                     UpdatedBy = "system"
                 }
             );
+            modelBuilder.Entity<CancellationPolicy>().HasData(
+                new CancellationPolicy
+                {
+                    Id = 1,
+                    FreeCancelWindowMinutes = 10,
+                    CancellationFee = 20m,
+                    LastUpdatedAt = new DateTime(2026, 4, 29, 0, 0, 0, DateTimeKind.Utc),
+                    UpdatedBy = "system"
+                }
+            );
 
+            // Performance Indexes for Azure SQL
+            modelBuilder.Entity<Booking>().HasIndex(b => b.CustomerId);
+            modelBuilder.Entity<Booking>().HasIndex(b => b.ProviderId);
+            modelBuilder.Entity<Booking>().HasIndex(b => new { b.Status, b.CreateAt });
+            modelBuilder.Entity<ChatMessage>().HasIndex(m => m.BookingId);
+            modelBuilder.Entity<Notification>().HasIndex(n => n.UserId);
+            modelBuilder.Entity<Notification>().HasIndex(n => new { n.UserId, n.IsRead });
+            modelBuilder.Entity<Notification>().HasIndex(n => n.Type);
+
+            // ---- Dispatch / chat / payout indexes ----
+            modelBuilder.Entity<Booking>().HasIndex(b => b.Status);
+            modelBuilder.Entity<Booking>().HasIndex(b => new { b.ProviderId, b.Status });
+            modelBuilder.Entity<Booking>().HasIndex(b => new { b.CustomerId, b.Status });
+            modelBuilder.Entity<Booking>().HasIndex(b => b.ScheduledTime);
+            // Makes the 5-second DispatchTimeoutWorker sweep an index seek, not a scan.
+            modelBuilder.Entity<Booking>().HasIndex(b => new { b.Status, b.DispatchDeadline });
+
+            // Makes the dispatch bounding-box prefilter cheap.
+            modelBuilder.Entity<Provider>().HasIndex(p => new { p.State, p.AvailabilityStatus });
+            modelBuilder.Entity<Provider>().HasIndex(p => new { p.CurrentLatitude, p.CurrentLongitude });
+
+            modelBuilder.Entity<ProviderService>().HasIndex(ps => new { ps.ServiceId, ps.IsActive });
+            modelBuilder.Entity<ChatMessage>().HasIndex(m => new { m.BookingId, m.SentAt });
+            modelBuilder.Entity<Payment>().HasIndex(p => p.BookingId);
+            modelBuilder.Entity<Payment>().HasIndex(p => new { p.PaymentStatus, p.PaidAt });
+            modelBuilder.Entity<BookingStatusHistory>().HasIndex(h => new { h.BookingId, h.ChangedAt });
+            modelBuilder.Entity<Payout>().HasIndex(p => new { p.ProviderId, p.Status });
+            modelBuilder.Entity<AuditLog>().HasIndex(a => new { a.UserId, a.Timestamp });
         }
     }
 }

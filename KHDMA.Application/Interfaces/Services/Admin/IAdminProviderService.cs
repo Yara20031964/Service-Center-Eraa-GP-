@@ -1,7 +1,8 @@
-﻿using Application.DTOs.Admin;
+using Application.DTOs.Admin;
+using KHDMA.Application.DTOs.Admin;
 using Domain.Common;
 
-namespace Application.Services.Admin;
+namespace KHDMA.Application.Interfaces.Services.Admin;
 
 public interface IAdminProviderService
 {
@@ -19,4 +20,5 @@ public interface IAdminProviderService
     Task<ApiResponse<string>> SuspendProviderAsync(string id);
     Task<ApiResponse<string>> BanProviderAsync(string id);
     Task<ApiResponse<string>> RestoreProviderAsync(string id);
+    Task<ApiResponse<ProviderPerformanceDto>> GetProviderPerformanceAsync(string id);
 }

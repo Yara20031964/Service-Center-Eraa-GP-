@@ -7,6 +7,8 @@ namespace KHDMA.API.Controllers.Admin;
 
 [ApiController]
 [Route("api/admin/categories")]
+[Authorize(Roles = "Admin")]
+[Tags(ApiTags.AdminCatalog)]
 public class AdminCategoriesController : ControllerBase
 {
     private readonly IAdminCategoryService _service;

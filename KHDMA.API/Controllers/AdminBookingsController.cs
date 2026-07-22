@@ -3,12 +3,14 @@ using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Enums;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace KHDMA.API.Controllers
 {
     [Route("api/admin/bookings")]
     [ApiController]
-    // [Authorize(Roles = "Admin")] // will be  uncommented if Auth is setup
+     [Authorize(Roles = "Admin")] // will be  uncommented if Auth is setup
+    [Tags(ApiTags.AdminBookings)]
     public class AdminBookingsController : ControllerBase
     {
         private readonly IAdminBookingService _bookingService;
@@ -50,6 +52,13 @@ namespace KHDMA.API.Controllers
         {
             var response = await _bookingService.GetBookingStatusHistoryAsync(id);
             if (!response.Success) return NotFound(response);
+            return Ok(response);
+        }
+
+        [HttpGet("{id}/transcript")]
+        public async Task<IActionResult> GetChatTranscript(Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var response = await _bookingService.GetChatTranscriptAsync(id, page, pageSize);
             return Ok(response);
         }
     }

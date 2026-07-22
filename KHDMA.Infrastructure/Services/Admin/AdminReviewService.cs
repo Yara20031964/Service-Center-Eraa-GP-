@@ -71,7 +71,7 @@ namespace KHDMA.Infrastructure.Services.Admin
                 .Include(r => r.Provider.ApplicationUser)
                 .FirstOrDefaultAsync(r => r.Id == reviewId);
 
-            if (review == null) return ApiResponse<ReviewDto>.Fail("Review not found");
+            if (review == null) return ApiResponse<ReviewDto>.NotFound("Review not found");
 
             var dto = new ReviewDto
             {
@@ -94,7 +94,7 @@ namespace KHDMA.Infrastructure.Services.Admin
         public async Task<ApiResponse<bool>> HideOrDeleteReviewAsync(Guid reviewId, bool isDeleted, bool isHidden)
         {
             var review = await _context.Reviews.FindAsync(reviewId);
-            if (review == null) return ApiResponse<bool>.Fail("Review not found");
+            if (review == null) return ApiResponse<bool>.NotFound("Review not found");
 
             review.IsDeleted = isDeleted;
             review.IsHidden = isHidden;
