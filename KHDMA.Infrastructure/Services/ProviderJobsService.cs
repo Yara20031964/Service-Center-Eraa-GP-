@@ -13,15 +13,18 @@ public class ProviderJobsService : IProviderJobsService
     private readonly AppDbContext _db;
     private readonly IDispatchCandidateStore _candidates;
     private readonly IPricingService _pricing;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
     public ProviderJobsService(
         AppDbContext db,
         IDispatchCandidateStore candidates,
-        IPricingService pricing)
+        IPricingService pricing,
+        IImageUrlResolver imageUrlResolver)
     {
         _db = db;
         _candidates = candidates;
         _pricing = pricing;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<ApiResponse<List<PendingJobDto>>> GetPendingJobsAsync(string providerId)
@@ -79,7 +82,8 @@ public class ProviderJobsService : IProviderJobsService
                 CategoryNameEn = booking.Service?.Category?.NameEn ?? string.Empty,
                 CategoryNameAr = booking.Service?.Category?.NameAr ?? string.Empty,
                 CustomerFirstName = FirstName(customerName),
-                CustomerAvatarUrl = booking.Customer?.ApplicationUser?.ProfilePictureUrl,
+                CustomerAvatarUrl = _imageUrlResolver.Resolve(
+                    booking.Customer?.ApplicationUser?.ProfilePictureUrl),
                 DistanceKm = Math.Round(DispatchService.Haversine(
                     provider.CurrentLatitude.Value,
                     provider.CurrentLongitude.Value,

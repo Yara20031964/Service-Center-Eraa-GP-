@@ -162,6 +162,8 @@ builder.Services.AddScoped<IEarningsService, EarningsService>();
 builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.IStripePaymentService,
     KHDMA.Infrastructure.Services.Payment.StripePaymentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IImageUrlResolver, ImageUrlResolver>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -350,7 +352,8 @@ app.UseSwaggerUI(c =>
     c.DefaultModelsExpandDepth(-1);
 });
 app.UseStaticFiles();
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.UseCors("AllowFrontends");
 app.UseAuthentication();
 app.UseAuthorization();

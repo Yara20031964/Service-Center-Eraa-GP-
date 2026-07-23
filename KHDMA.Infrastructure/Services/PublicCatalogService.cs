@@ -44,12 +44,18 @@ namespace KHDMA.Infrastructure.Services
         private readonly AppDbContext _db;
         private readonly IPricingService _pricing;
         private readonly IPresenceStore _presence;
+        private readonly IImageUrlResolver _imageUrlResolver;
 
-        public PublicCatalogService(AppDbContext db, IPricingService pricing, IPresenceStore presence)
+        public PublicCatalogService(
+            AppDbContext db,
+            IPricingService pricing,
+            IPresenceStore presence,
+            IImageUrlResolver imageUrlResolver)
         {
             _db = db;
             _pricing = pricing;
             _presence = presence;
+            _imageUrlResolver = imageUrlResolver;
         }
 
         public async Task<ApiResponse<List<PublicCategoryDto>>> GetCategoriesAsync()
@@ -67,6 +73,9 @@ namespace KHDMA.Infrastructure.Services
                     ServiceCount = c.Services.Count(s => s.IsActive),
                 })
                 .ToListAsync();
+
+            foreach (var category in categories)
+                category.IconUrl = _imageUrlResolver.Resolve(category.IconUrl);
 
             return ApiResponse<List<PublicCategoryDto>>.Ok(categories);
         }
@@ -100,6 +109,9 @@ namespace KHDMA.Infrastructure.Services
                 .Select(ServiceProjection)
                 .ToListAsync();
 
+            foreach (var item in items)
+                ResolveServiceImageUrls(item);
+
             return PagedResponse<PublicServiceDto>.Ok(items, total, page, pageSize);
         }
 
@@ -112,6 +124,7 @@ namespace KHDMA.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             if (basics is null) return ApiResponse<PublicServiceDetailDto>.NotFound("Service not found");
+            ResolveServiceImageUrls(basics);
 
             var providerCount = await _db.ProviderServices
                 .AsNoTracking()
@@ -225,7 +238,7 @@ namespace KHDMA.Infrastructure.Services
                 {
                     Id = p.Id,
                     Name = p.Name,
-                    Photo = p.Photo,
+                    Photo = _imageUrlResolver.Resolve(p.Photo),
                     JobTitle = p.JobTitle,
                     Rating = p.Rating,
                     ReviewCount = p.ReviewCount,
@@ -328,13 +341,19 @@ namespace KHDMA.Infrastructure.Services
                 return ApiResponse<ProviderPublicProfileDto>.NotFound("Provider not found");
 
             var isConnected = await _presence.IsOnlineAsync(providerId);
+            foreach (var service in provider.Services)
+                ResolveServiceImageUrls(service);
+            foreach (var certificate in provider.Certificates)
+                certificate.ImageUrl = _imageUrlResolver.Resolve(certificate.ImageUrl)!;
+            foreach (var review in provider.Reviews)
+                review.CustomerAvatarUrl = _imageUrlResolver.Resolve(review.CustomerAvatarUrl);
 
             return ApiResponse<ProviderPublicProfileDto>.Ok(new ProviderPublicProfileDto
             {
                 Id = provider.ApplicationUserId,
                 FullName = provider.FullName,
                 JobTitle = provider.JobTitle,
-                AvatarUrl = provider.ProfilePictureUrl,
+                AvatarUrl = _imageUrlResolver.Resolve(provider.ProfilePictureUrl),
                 IsVerified = true,   // only Active providers reach here
                 IsOnline = provider.AvailabilityStatus == AvailabilityStatus.Online && isConnected,
                 // SRS 8: withhold the headline figure until it means something.
@@ -346,10 +365,20 @@ namespace KHDMA.Infrastructure.Services
                 DescriptionAr = provider.Description,
                 ServicesOffered = provider.Services,
                 WorkingAreas = SplitServiceAreas(provider.ServiceArea),
-                PortfolioImages = provider.Portfolio,
+                PortfolioImages = provider.Portfolio
+                    .Select(url => _imageUrlResolver.Resolve(url)!)
+                    .ToList(),
                 Certificates = provider.Certificates,
                 Reviews = provider.Reviews,
             });
+        }
+
+        private void ResolveServiceImageUrls(PublicServiceDto service)
+        {
+            service.ImageUrl = _imageUrlResolver.Resolve(service.ImageUrl);
+            service.ImageUrls = service.ImageUrls
+                .Select(url => _imageUrlResolver.Resolve(url)!)
+                .ToList();
         }
 
         /// <summary>

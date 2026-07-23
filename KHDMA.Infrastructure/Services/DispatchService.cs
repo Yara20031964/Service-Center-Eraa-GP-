@@ -39,6 +39,7 @@ namespace KHDMA.Infrastructure.Services
         private readonly ILockService _locks;
         private readonly IDispatchCandidateStore _candidates;
         private readonly IPricingService _pricing;
+        private readonly IImageUrlResolver _imageUrlResolver;
         private readonly DispatchSettings _settings;
         private readonly ILogger<DispatchService> _logger;
 
@@ -48,6 +49,7 @@ namespace KHDMA.Infrastructure.Services
             ILockService locks,
             IDispatchCandidateStore candidates,
             IPricingService pricing,
+            IImageUrlResolver imageUrlResolver,
             IOptions<DispatchSettings> settings,
             ILogger<DispatchService> logger)
         {
@@ -56,6 +58,7 @@ namespace KHDMA.Infrastructure.Services
             _locks = locks;
             _candidates = candidates;
             _pricing = pricing;
+            _imageUrlResolver = imageUrlResolver;
             _settings = settings.Value;
             _logger = logger;
         }
@@ -284,7 +287,8 @@ namespace KHDMA.Infrastructure.Services
                     // SRS 7.1: first name and distance only. The street address is
                     // withheld until the provider accepts.
                     CustomerFirstName = FirstName(customerName),
-                    CustomerAvatarUrl = booking.Customer?.ApplicationUser?.ProfilePictureUrl,
+                    CustomerAvatarUrl = _imageUrlResolver.Resolve(
+                        booking.Customer?.ApplicationUser?.ProfilePictureUrl),
                     DistanceKm = Math.Round(candidate.DistanceKm, 2),
 
                     ProviderEarning = providerEarning,
@@ -412,7 +416,7 @@ namespace KHDMA.Infrastructure.Services
                 ProviderId = providerId,
                 FullName = user?.FullName ?? string.Empty,
                 JobTitle = provider.JobTitle,
-                AvatarUrl = user?.ProfilePictureUrl,
+                AvatarUrl = _imageUrlResolver.Resolve(user?.ProfilePictureUrl),
                 // SRS 8: no headline rating until there are at least 3 reviews.
                 Rating = provider.ReviewCount >= 3 ? provider.Rating : null,
                 ReviewCount = provider.ReviewCount,

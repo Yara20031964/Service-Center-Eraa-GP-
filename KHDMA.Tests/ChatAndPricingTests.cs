@@ -20,7 +20,12 @@ public class ChatServiceTests
     private static ChatService NewChatService(TestHarness harness, Infrastructure.Data.AppDbContext db, out RecordingChatNotifier notifier)
     {
         notifier = new RecordingChatNotifier();
-        return new ChatService(db, new BookingAccessService(db), notifier, new InMemoryPresenceStore());
+        return new ChatService(
+            db,
+            new BookingAccessService(db),
+            notifier,
+            new InMemoryPresenceStore(),
+            new PassthroughImageUrlResolver());
     }
 
     private static async Task<(Guid BookingId, string CustomerId, string ProviderId)> AcceptedBookingAsync(TestHarness harness)

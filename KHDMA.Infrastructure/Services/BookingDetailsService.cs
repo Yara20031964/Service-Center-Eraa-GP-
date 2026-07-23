@@ -10,8 +10,13 @@ namespace KHDMA.Infrastructure.Services;
 public class BookingDetailsService : IBookingDetailsService
 {
     private readonly AppDbContext _db;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public BookingDetailsService(AppDbContext db) => _db = db;
+    public BookingDetailsService(AppDbContext db, IImageUrlResolver imageUrlResolver)
+    {
+        _db = db;
+        _imageUrlResolver = imageUrlResolver;
+    }
 
     public async Task<ApiResponse<BookingDetailDto>> GetAsync(Guid bookingId, string userId)
     {
@@ -43,7 +48,7 @@ public class BookingDetailsService : IBookingDetailsService
                 ProviderName = b.Provider?.ApplicationUser?.FullName,
                 ProviderPhone = b.Provider?.ApplicationUser?.PhoneNumber,
                 ProviderRating = b.Provider?.Rating,
-                ProviderPhoto = b.Provider?.ApplicationUser?.ProfilePictureUrl,
+                ProviderPhoto = _imageUrlResolver.Resolve(b.Provider?.ApplicationUser?.ProfilePictureUrl),
                 ServiceId = b.ServiceId,
                 ServiceName = b.Service?.NameEn ?? string.Empty,
                 BookingType = b.BookingType,

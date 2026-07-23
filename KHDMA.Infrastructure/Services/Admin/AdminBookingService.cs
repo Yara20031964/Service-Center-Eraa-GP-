@@ -6,6 +6,7 @@ using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
 using Domain.Common;
 using KHDMA.Application.DTOs.Admin;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Infrastructure.Data;
 
@@ -14,10 +15,12 @@ namespace KHDMA.Infrastructure.Services.Admin
     public class AdminBookingService : IAdminBookingService
     {
         private readonly AppDbContext _context;
+        private readonly IImageUrlResolver _imageUrlResolver;
 
-        public AdminBookingService(AppDbContext context)
+        public AdminBookingService(AppDbContext context, IImageUrlResolver imageUrlResolver)
         {
             _context = context;
+            _imageUrlResolver = imageUrlResolver;
         }
 
         public async Task<PagedResponse<BookingListDto>> GetAllBookingsAsync(int pageNumber, int pageSize, BookingStatus? status, DateTime? fromDate, DateTime? toDate, string? customerId, string? providerId)
@@ -179,6 +182,9 @@ namespace KHDMA.Infrastructure.Services.Admin
                     AttachmentUrl = m.AttachmentUrl
                 })
                 .ToListAsync();
+
+            foreach (var message in messages)
+                message.AttachmentUrl = _imageUrlResolver.Resolve(message.AttachmentUrl);
 
             return PagedResponse<ChatTranscriptDto>.Ok(messages, totalCount, page, pageSize);
         }

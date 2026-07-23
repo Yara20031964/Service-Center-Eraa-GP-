@@ -17,7 +17,8 @@ public class BookingDetailsServiceTests
         var bookingId = harness.SeedBooking(world);
 
         await using var db = harness.NewContext();
-        var result = await new BookingDetailsService(db).GetAsync(bookingId, world.CustomerId);
+        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver())
+            .GetAsync(bookingId, world.CustomerId);
 
         Assert.True(result.Success);
         Assert.Equal(200, result.StatusCode);
@@ -38,7 +39,8 @@ public class BookingDetailsServiceTests
         var bookingId = harness.SeedBooking(world);
 
         await using var db = harness.NewContext();
-        var result = await new BookingDetailsService(db).GetAsync(bookingId, "not-a-participant");
+        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver())
+            .GetAsync(bookingId, "not-a-participant");
 
         Assert.False(result.Success);
         Assert.Equal(403, result.StatusCode);
@@ -63,7 +65,8 @@ public class BookingDetailsServiceTests
         }
 
         await using var db = harness.NewContext();
-        var result = await new BookingDetailsService(db).GetAsync(bookingId, providerId);
+        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver())
+            .GetAsync(bookingId, providerId);
 
         Assert.True(result.Success);
         Assert.Equal(providerId, result.Data!.ProviderId);
@@ -86,7 +89,8 @@ public class ProviderJobsServiceTests
 
         await using var db = harness.NewContext();
         var service = new ProviderJobsService(
-            db, harness.Candidates, new StubPricingService(212.50m));
+            db, harness.Candidates, new StubPricingService(212.50m),
+            new PassthroughImageUrlResolver());
 
         var included = await service.GetPendingJobsAsync(world.ProviderIds[0]);
         var excluded = await service.GetPendingJobsAsync(world.ProviderIds[1]);
@@ -111,7 +115,8 @@ public class ProviderJobsServiceTests
 
         await using var db = harness.NewContext();
         var service = new ProviderJobsService(
-            db, harness.Candidates, new StubPricingService(212.50m));
+            db, harness.Candidates, new StubPricingService(212.50m),
+            new PassthroughImageUrlResolver());
 
         var original = await db.Providers
             .AsNoTracking()
@@ -157,7 +162,8 @@ public class ProviderJobsServiceTests
 
         await using var db = harness.NewContext();
         var service = new ProviderJobsService(
-            db, harness.Candidates, new StubPricingService(212.50m));
+            db, harness.Candidates, new StubPricingService(212.50m),
+            new PassthroughImageUrlResolver());
 
         var result = await service.GetPendingJobsAsync(providerId);
 
@@ -170,7 +176,8 @@ public class ProviderJobsServiceTests
 public class PublicProviderListingTests
 {
     private static PublicCatalogService NewCatalog(TestHarness harness, Infrastructure.Data.AppDbContext db)
-        => new(db, new StubPricingService(212.50m), new InMemoryPresenceStore());
+        => new(db, new StubPricingService(212.50m), new InMemoryPresenceStore(),
+            new PassthroughImageUrlResolver());
 
     [Fact]
     public async Task Listing_FiltersByCategoryAndSearch_AndOrdersByRating()

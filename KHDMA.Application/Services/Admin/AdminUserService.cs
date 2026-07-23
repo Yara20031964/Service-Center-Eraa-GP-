@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Admin;
 using Domain.Common;
 using KHDMA.Application.Interfaces.Repositories;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
@@ -12,13 +13,16 @@ public class AdminUserService : IAdminUserService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
     public AdminUserService(
         IUnitOfWork unitOfWork,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IImageUrlResolver imageUrlResolver)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<PagedResponse<AdminUserDto>> GetAllAdminsAsync(
@@ -44,7 +48,7 @@ public class AdminUserService : IAdminUserService
                 FullName = u.FullName,
                 Email = u.Email!,
                 PhoneNumber = u.PhoneNumber,
-                ProfilePictureUrl = u.ProfilePictureUrl,
+                ProfilePictureUrl = _imageUrlResolver.Resolve(u.ProfilePictureUrl),
                 Status = u.Status,
                 CreateAt = u.CreateAt
             });
@@ -68,7 +72,7 @@ public class AdminUserService : IAdminUserService
             FullName = user.FullName,
             Email = user.Email!,
             PhoneNumber = user.PhoneNumber,
-            ProfilePictureUrl = user.ProfilePictureUrl,
+            ProfilePictureUrl = _imageUrlResolver.Resolve(user.ProfilePictureUrl),
             Status = user.Status,
             CreateAt = user.CreateAt
         });
