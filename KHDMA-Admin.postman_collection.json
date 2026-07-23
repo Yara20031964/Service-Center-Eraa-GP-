@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "bcf5e7b2-3b85-48b4-82a9-0d2e854e4c3b",
-    "name": "KHDMA Admin & Stripe APIs",
-    "description": "Collection of all Bookings, Payments, Reviews Admin APIs and Stripe Client endpoints.",
+    "name": "KHDMA Admin APIs",
+    "description": "Collection of all Bookings, Payments and Reviews Admin APIs. Payments are processed through Paymob.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -173,7 +173,7 @@
           }
         },
         {
-          "name": "Issue Refund (Stripe)",
+          "name": "Issue Refund",
           "request": {
             "method": "POST",
             "header": [
