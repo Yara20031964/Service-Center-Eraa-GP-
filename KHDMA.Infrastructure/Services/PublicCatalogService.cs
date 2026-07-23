@@ -152,6 +152,111 @@ namespace KHDMA.Infrastructure.Services
             return ApiResponse<PublicServiceDetailDto>.Ok(detail);
         }
 
+        public async Task<PagedResponse<PublicProviderCardDto>> GetProvidersAsync(
+            Guid? category,
+            string? search,
+            double? lat,
+            double? lng,
+            double? radiusKm,
+            int page,
+            int pageSize)
+        {
+            if (page < 1) page = 1;
+            if (pageSize is < 1 or > 50) pageSize = 10;
+
+            var nearby = lat.HasValue && lng.HasValue;
+            var effectiveRadiusKm = radiusKm is > 0 ? radiusKm.Value : 25d;
+
+            var query = _db.Providers
+                .AsNoTracking()
+                .Where(p => p.State == ProviderState.Active && !p.ApplicationUser.IsDeleted);
+
+            if (category.HasValue)
+            {
+                query = query.Where(p => p.ProviderServices.Any(ps =>
+                    ps.IsActive
+                    && ps.Service.IsActive
+                    && ps.Service.CategoryId == category.Value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(p =>
+                    p.ApplicationUser.FullName.Contains(term)
+                    || (p.JobTitle != null && p.JobTitle.Contains(term)));
+            }
+
+            if (nearby)
+            {
+                var latitudeDelta = effectiveRadiusKm / 111.0;
+                var longitudeScale = Math.Max(
+                    0.01,
+                    Math.Abs(Math.Cos(lat!.Value * Math.PI / 180.0)));
+                var longitudeDelta = effectiveRadiusKm / (111.32 * longitudeScale);
+
+                query = query
+                    .Where(p => p.AvailabilityStatus == AvailabilityStatus.Online)
+                    .Where(p => p.CurrentLatitude != null && p.CurrentLongitude != null)
+                    .Where(p => p.CurrentLatitude >= lat.Value - latitudeDelta
+                             && p.CurrentLatitude <= lat.Value + latitudeDelta)
+                    .Where(p => p.CurrentLongitude >= lng!.Value - longitudeDelta
+                             && p.CurrentLongitude <= lng.Value + longitudeDelta);
+            }
+
+            var rows = await query
+                .Select(p => new
+                {
+                    Id = p.ApplicationUserId,
+                    Name = p.ApplicationUser.FullName,
+                    Photo = p.ApplicationUser.ProfilePictureUrl,
+                    p.JobTitle,
+                    p.Rating,
+                    p.ReviewCount,
+                    p.HourlyRate,
+                    p.CurrentLatitude,
+                    p.CurrentLongitude,
+                })
+                .ToListAsync();
+
+            var cards = rows
+                .AsEnumerable()
+                .Select(p => new PublicProviderCardDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Photo = p.Photo,
+                    JobTitle = p.JobTitle,
+                    Rating = p.Rating,
+                    ReviewCount = p.ReviewCount,
+                    HourlyRate = p.HourlyRate,
+                    DistanceKm = nearby
+                        ? Math.Round(DispatchService.Haversine(
+                            lat!.Value,
+                            lng!.Value,
+                            p.CurrentLatitude!.Value,
+                            p.CurrentLongitude!.Value), 2)
+                        : null,
+                });
+
+            cards = nearby
+                ? cards.Where(p => p.DistanceKm <= effectiveRadiusKm)
+                    .OrderBy(p => p.DistanceKm)
+                    .ThenByDescending(p => p.Rating)
+                    .ThenBy(p => p.Name)
+                : cards.OrderByDescending(p => p.Rating)
+                    .ThenBy(p => p.Name);
+
+            var materialized = cards.ToList();
+            var total = materialized.Count;
+            var items = materialized
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return PagedResponse<PublicProviderCardDto>.Ok(items, total, page, pageSize);
+        }
+
         public async Task<ApiResponse<ProviderPublicProfileDto>> GetProviderProfileAsync(string providerId)
         {
             var provider = await _db.Providers

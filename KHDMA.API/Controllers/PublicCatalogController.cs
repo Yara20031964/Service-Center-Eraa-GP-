@@ -44,6 +44,21 @@ namespace KHDMA.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("providers/public")]
+        public async Task<IActionResult> GetProviders(
+            [FromQuery] Guid? category,
+            [FromQuery] string? search,
+            [FromQuery] double? lat,
+            [FromQuery] double? lng,
+            [FromQuery] double? radiusKm,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _catalog.GetProvidersAsync(
+                category, search, lat, lng, radiusKm, page, pageSize);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("providers/{id}/public")]
         public async Task<IActionResult> GetProviderProfile(string id)
         {

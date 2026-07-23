@@ -179,6 +179,8 @@ builder.Services.AddScoped<IBookingAccessService, BookingAccessService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IPublicCatalogService, PublicCatalogService>();
+builder.Services.AddScoped<IBookingDetailsService, BookingDetailsService>();
+builder.Services.AddScoped<IProviderJobsService, ProviderJobsService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddHttpClient<IEtaProvider, EtaProvider>();
 

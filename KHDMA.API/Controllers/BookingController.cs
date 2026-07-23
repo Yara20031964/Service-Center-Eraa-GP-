@@ -10,6 +10,7 @@ using KHDMA.Application.Features.Bookings.Queries.ExportBookings;
 using System.Security.Claims;
 using KHDMA.Application.DTOs.Booking;
 using KHDMA.Application.DTOs.RealTime;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Domain.Enums;
 using Domain.Common;
 
@@ -25,10 +26,12 @@ namespace KHDMA.API.Controllers
     public class BookingController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly IBookingDetailsService _bookingDetails;
 
-        public BookingController(IMediator mediator)
+        public BookingController(IMediator mediator, IBookingDetailsService bookingDetails)
         {
             _mediator = mediator;
+            _bookingDetails = bookingDetails;
         }
 
         /// <summary>
@@ -80,6 +83,21 @@ namespace KHDMA.API.Controllers
                 AddressId = dto.AddressId,
                 Notes = dto.Notes,
             };
+
+        [HttpGet("{id:guid}")]
+        [Tags(ApiTags.CommonBookings)]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                var unauthorized = ApiResponse<BookingDetailDto>.Unauthorized();
+                return StatusCode(unauthorized.StatusCode, unauthorized);
+            }
+
+            var result = await _bookingDetails.GetAsync(id, userId);
+            return StatusCode(result.StatusCode, result);
+        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Cancel(Guid id, [FromBody] string reason)

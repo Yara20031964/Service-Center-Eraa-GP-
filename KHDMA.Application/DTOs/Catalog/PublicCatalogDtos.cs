@@ -35,6 +35,19 @@ namespace KHDMA.Application.DTOs.Catalog
         public int ReviewCount { get; set; }
     }
 
+    /// <summary>A compact provider tile for public browse, search, and map screens.</summary>
+    public class PublicProviderCardDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Photo { get; set; }
+        public string? JobTitle { get; set; }
+        public double Rating { get; set; }
+        public int ReviewCount { get; set; }
+        public decimal? HourlyRate { get; set; }
+        public double? DistanceKm { get; set; }
+    }
+
     /// <summary>Service detail page. Adds the price breakdown the checkout screen needs.</summary>
     public class PublicServiceDetailDto : PublicServiceDto
     {
