@@ -159,8 +159,6 @@ builder.Services.AddScoped<IAdminBookingService, AdminBookingService>();
 builder.Services.AddScoped<IAdminPaymentService, AdminPaymentService>();
 builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IEarningsService, EarningsService>();
-builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.IStripePaymentService,
-    KHDMA.Infrastructure.Services.Payment.StripePaymentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IImageUrlResolver, ImageUrlResolver>();

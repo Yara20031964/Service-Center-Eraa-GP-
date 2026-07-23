@@ -13,6 +13,7 @@ using KHDMA.Application.DTOs.RealTime;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Domain.Enums;
 using Domain.Common;
+using Application.DTOs.Payment;
 
 namespace KHDMA.API.Controllers
 {
@@ -312,7 +313,15 @@ namespace KHDMA.API.Controllers
         [HttpPost("{id}/retry-payment")]
         public async Task<IActionResult> RetryPayment(Guid id)
         {
-            var command = new KHDMA.Application.Features.Bookings.Commands.RetryPayment.RetryPaymentCommand { BookingId = id };
+            var customerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(customerId))
+                return Unauthorized(ApiResponse<PaymentKeyResponseDto>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.RetryPayment.RetryPaymentCommand
+            {
+                BookingId = id,
+                CustomerId = customerId,
+            };
             var result = await _mediator.Send(command);
             return StatusCode(result.StatusCode, result);
         }

@@ -11,5 +11,5 @@ public interface IPaymobService
     Task<ApiResponse<string>> HandleWebhookAsync(
         PaymentWebhookDto dto, string hmacSignature);
 
-    Task<ApiResponse<string>> RefundAsync(Guid paymentId);
+    Task<ApiResponse<string>> RefundAsync(Guid paymentId, decimal? amount = null);
 }
