@@ -46,11 +46,15 @@ namespace KHDMA.Application.Features.Bookings.Queries.ExportBookings
 
             var exportData = query
                 .OrderByDescending(b => b.CreateAt)
+                // In memory, so guard the optional provider: a booking that never
+                // got accepted (Pending/Dispatching/NoProviderFound) has none, and
+                // the unguarded dereference here 500'd the whole export.
+                .AsEnumerable()
                 .Select(b => new
                 {
                     b.Id,
-                    Customer = b.Customer.ApplicationUser.FullName,
-                    Provider = b.Provider.ApplicationUser.FullName,
+                    Customer = b.Customer.ApplicationUser?.FullName,
+                    Provider = b.Provider?.ApplicationUser?.FullName,
                     Service = b.Service.NameEn,
                     b.Status,
                     b.TotalPrice,
