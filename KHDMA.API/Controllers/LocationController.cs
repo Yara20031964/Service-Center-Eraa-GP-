@@ -30,6 +30,10 @@ namespace KHDMA.API.Controllers
         /// </remarks>
         [HttpPut("update")]
         [HttpPost("update")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Update([FromBody] UpdateLocationDto dto)
         {
             if (UserId is null) return Unauthorized(ApiResponse<bool>.Unauthorized());
@@ -55,6 +59,11 @@ namespace KHDMA.API.Controllers
         /// <c>source</c> before presenting it as precise.
         /// </summary>
         [HttpGet("{id:guid}/eta")]
+        [ProducesResponseType<ApiResponse<EtaDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<EtaDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<EtaDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<EtaDto>>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ApiResponse<EtaDto>>(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> GetEta(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

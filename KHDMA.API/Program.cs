@@ -301,6 +301,10 @@ builder.Services.AddSwaggerGen(c =>
             "Section 26 needs no token at all.",
     });
 
+    // Three DTO names exist twice in different namespaces, which collides once
+    // both halves are reachable as declared response types - see SchemaIds.
+    c.CustomSchemaIds(SchemaIds.For);
+
     // Sections come from [Tags(ApiTags.X)] on the controller - or on the action,
     // where one controller serves several roles - and are ordered by the filter.
     c.TagActionsBy(ApiTags.SelectFor);

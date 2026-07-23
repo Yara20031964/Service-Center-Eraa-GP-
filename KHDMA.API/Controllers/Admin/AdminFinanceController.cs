@@ -1,4 +1,6 @@
 ﻿using KHDMA.Application.Interfaces.Payment;
+using Application.DTOs.Payments;
+using Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +21,7 @@ public class AdminFinanceController : ControllerBase
 
     // GET api/admin/transactions?status=Paid&dateFrom=2024-01-01&page=1&pageSize=10
     [HttpGet("transactions")]
+    [ProducesResponseType<PagedResponse<TransactionDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTransactions(
         [FromQuery] string? status,
         [FromQuery] DateTime? dateFrom,
@@ -33,6 +36,7 @@ public class AdminFinanceController : ControllerBase
 
     // GET api/admin/reports/revenue?period=monthly&dateFrom=2024-01-01
     [HttpGet("reports/revenue")]
+    [ProducesResponseType<ApiResponse<RevenueReportDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRevenue(
         [FromQuery] string period = "monthly",
         [FromQuery] DateTime? dateFrom = null,

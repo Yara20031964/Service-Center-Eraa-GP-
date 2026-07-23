@@ -19,6 +19,9 @@ public class ProviderController : ControllerBase
         => _providerJobs = providerJobs;
 
     [HttpGet("pending-jobs")]
+    [ProducesResponseType<ApiResponse<List<PendingJobDto>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<PendingJobDto>>>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiResponse<List<PendingJobDto>>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPendingJobs()
     {
         var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -33,6 +36,10 @@ public class ProviderController : ControllerBase
     }
 
     [HttpPut("availability")]
+    [ProducesResponseType<ApiResponse<ProviderAvailabilityDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<ProviderAvailabilityDto>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<ProviderAvailabilityDto>>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiResponse<ProviderAvailabilityDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAvailability([FromBody] UpdateAvailabilityDto dto)
     {
         var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);

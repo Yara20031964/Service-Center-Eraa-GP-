@@ -24,11 +24,13 @@ namespace KHDMA.API.Controllers
         // 501 in the standard envelope rather than throwing, so a client that calls
         // them gets a readable body instead of a bodiless 500.
         [HttpPost("upload")]
+        [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status501NotImplemented)]
         public Task<IActionResult> Upload(IFormFile file)
             => Task.FromResult<IActionResult>(StatusCode(501,
                 ApiResponse<string>.Fail("Direct blob upload is not enabled; use POST /api/profile/portfolio or /api/chat/{bookingId}/attachments", 501)));
 
         [HttpGet("presigned-url")]
+        [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status501NotImplemented)]
         public IActionResult GetPresignedUrl([FromQuery] string fileName)
             => StatusCode(501, ApiResponse<string>.Fail("Presigned URLs are not enabled on this deployment", 501));
     }

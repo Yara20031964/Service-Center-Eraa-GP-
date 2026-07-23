@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Admin;
 using Application.Interfaces.Services;
+using Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -22,6 +23,7 @@ public class AdminModerationController : ControllerBase
     // ── NOTIFICATION TEMPLATES ────────────────────────────────
     // GET api/admin/notification-templates
     [HttpGet("notification-templates")]
+    [ProducesResponseType<ApiResponse<IEnumerable<NotificationTemplateDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTemplates()
     {
         var result = await _service.GetAllTemplatesAsync();
@@ -30,6 +32,8 @@ public class AdminModerationController : ControllerBase
 
     // PUT api/admin/notification-templates/{id}
     [HttpPut("notification-templates/{id:guid}")]
+    [ProducesResponseType<ApiResponse<NotificationTemplateDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<NotificationTemplateDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateTemplate(
         Guid id, [FromBody] UpdateNotificationTemplateDto dto)
     {
@@ -40,6 +44,9 @@ public class AdminModerationController : ControllerBase
     // ── REVIEW MODERATION ─────────────────────────────────────
     // PUT api/admin/reviews/{id}/hide
     [HttpPut("reviews/{id:guid}/hide")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> HideReview(
         Guid id, [FromBody] HideReviewDto dto)
     {
@@ -49,6 +56,8 @@ public class AdminModerationController : ControllerBase
 
     // DELETE api/admin/reviews/{id}
     [HttpDelete("reviews/{id:guid}")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteReview(Guid id)
     {
         var result = await _service.DeleteReviewAsync(id);
@@ -58,6 +67,8 @@ public class AdminModerationController : ControllerBase
     // ── IMPERSONATE ───────────────────────────────────────────
     // POST api/admin/users/{id}/impersonate
     [HttpPost("users/{id}/impersonate")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Impersonate(string id)
     {
         var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
@@ -68,6 +79,8 @@ public class AdminModerationController : ControllerBase
     // ── BULK PROVIDER ACTIONS ─────────────────────────────────
     // POST api/admin/providers/bulk-approve
     [HttpPost("providers/bulk-approve")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> BulkApprove([FromBody] BulkProviderActionDto dto)
     {
         var result = await _service.BulkApproveProvidersAsync(dto);
@@ -76,6 +89,8 @@ public class AdminModerationController : ControllerBase
 
     // POST api/admin/providers/bulk-reject
     [HttpPost("providers/bulk-reject")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> BulkReject([FromBody] BulkProviderActionDto dto)
     {
         var result = await _service.BulkRejectProvidersAsync(dto);

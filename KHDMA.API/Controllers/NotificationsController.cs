@@ -43,6 +43,7 @@ namespace KHDMA.API.Controllers
         };
 
         [HttpPost("register-token")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status501NotImplemented)]
         public Task<IActionResult> RegisterToken([FromBody] DeviceTokenDto dto)
         {
             // Push delivery is not wired up yet (no FCM credentials); notifications
@@ -60,6 +61,8 @@ namespace KHDMA.API.Controllers
         [HttpPost("send")]
         [Authorize(Roles = "Admin")]
         [Tags(ApiTags.AdminNotifications)]
+        [ProducesResponseType<ApiResponse<NotificationDto>>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ApiResponse<NotificationDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SendNotification([FromBody] SendNotificationDto dto)
         {
             var target = await _userManager.FindByIdAsync(dto.UserId);
@@ -86,6 +89,10 @@ namespace KHDMA.API.Controllers
         /// this route previously required no token and accepted any user id.
         /// </summary>
         [HttpGet("user/{userId}")]
+        [ProducesResponseType<ApiResponse<List<NotificationDto>>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<List<NotificationDto>>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<List<NotificationDto>>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<List<NotificationDto>>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetUserNotifications(string userId)
         {
             if (UserId is null) return Unauthorized(ApiResponse<List<NotificationDto>>.Unauthorized());
@@ -106,6 +113,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType<PagedResponse<NotificationDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<PagedResponse<NotificationDto>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetNotifications(
             [FromQuery] string? type,
             [FromQuery] bool? isRead,
@@ -138,6 +147,9 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPut("{id}/read")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Read(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -158,6 +170,9 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var notification = await _notificationRepo.GetOneAsync(e => e.Id == id);
@@ -175,6 +190,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPut("read-all")]
+        [ProducesResponseType<ApiResponse<int>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<int>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> MarkAllAsRead()
         {
             if (UserId is null) return Unauthorized(ApiResponse<int>.Unauthorized());
