@@ -7,6 +7,8 @@ import Customers from './pages/Customers/Customers'
 import Providers from './pages/Providers/Providers'
 import Catalog from './pages/Catalog/Catalog'
 import Payments from './pages/Payments/Payments'
+import Reviews from './pages/Reviews/Reviews'
+import Bookings from './pages/Bookings/Bookings'
 
 // App shell: SignIn when signed out; otherwise the admin console with
 // state-based navigation between pages.
@@ -36,6 +38,8 @@ export default function App() {
       {page === 'providers' && <Providers session={session} onLogout={handleLogout} />}
       {page === 'catalog' && <Catalog session={session} onLogout={handleLogout} />}
       {page === 'payments' && <Payments session={session} onLogout={handleLogout} />}
+      {page === 'reviews' && <Reviews session={session} onLogout={handleLogout} />}
+      {page === 'bookings' && <Bookings session={session} onLogout={handleLogout} />}
     </AdminLayout>
   )
 }

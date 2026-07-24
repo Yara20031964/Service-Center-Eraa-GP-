@@ -357,6 +357,9 @@ app.UseSwaggerUI(c =>
     c.EnableFilter();
     c.DefaultModelsExpandDepth(-1);
 });
+// Serve the admin SPA (copied into wwwroot at deploy time) so GET / returns
+// index.html. UseDefaultFiles must run before UseStaticFiles to rewrite "/".
+app.UseDefaultFiles();
 app.UseStaticFiles();
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();

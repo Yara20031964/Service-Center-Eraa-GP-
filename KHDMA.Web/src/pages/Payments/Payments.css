@@ -45,41 +45,6 @@
   color: var(--ink);
 }
 
-/* Tabs */
-.pay-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border);
-}
-.pay-tab {
-  position: relative;
-  padding: 10px 4px;
-  margin-right: 20px;
-  border: none;
-  background: transparent;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.pay-tab:hover {
-  color: var(--ink);
-}
-.pay-tab--active {
-  color: var(--brand);
-}
-.pay-tab--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--brand);
-}
-
 /* Amount cell: primary figure + commission sub-line */
 .pay-amount__main {
   font-weight: 600;
@@ -121,15 +86,6 @@
   background: var(--danger-soft);
   border-color: var(--danger-border);
   color: var(--brand);
-}
-.pay-act--approve {
-  color: #1c7a3a;
-  border-color: #bfe6c8;
-}
-.pay-act--approve:hover:not(:disabled) {
-  background: #e4f7e7;
-  border-color: #bfe6c8;
-  color: #1c7a3a;
 }
 .pay-act:disabled {
   opacity: 0.5;

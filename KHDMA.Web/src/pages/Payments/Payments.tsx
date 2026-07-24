@@ -6,29 +6,24 @@ import {
 } from 'react'
 import type { TokenResponse } from '../../api/auth'
 import {
-  approvePayout,
   getPayments,
-  getPayouts,
   issueRefund,
   loadPaymentsSummary,
   UnauthorizedError,
   type PaymentRow,
   type PaymentsSummary,
-  type PayoutRow,
 } from '../../api/admin'
 import Avatar from '../../components/Avatar'
 import Badge from '../../components/Badge'
 import Pagination from '../../components/Pagination'
 import { CardIcon, RevenueIcon, Spinner } from '../../components/icons'
 import { fullDate, moneyCompact, moneyFull } from '../../lib/format'
-import { payoutStatus, paymentStatus } from '../../lib/status'
+import { paymentStatus } from '../../lib/status'
 import { usePagedList } from '../../lib/usePagedList'
 import './Payments.css'
 
 // PaymentStatus.Paid — the only state a refund can be issued against.
 const PAID = 1
-
-type Tab = 'transactions' | 'payouts'
 
 export default function Payments({
   session,
@@ -38,41 +33,19 @@ export default function Payments({
   onLogout: () => void
 }) {
   const token = session.accessToken
-  const [tab, setTab] = useState<Tab>('transactions')
 
   return (
     <>
       <div className="page-head">
         <div>
           <h1>Payments</h1>
-          <p>Transactions, refunds and provider payouts</p>
+          <p>Transactions and refunds</p>
         </div>
       </div>
 
       <Summary token={token} onLogout={onLogout} />
 
-      <div className="pay-tabs">
-        <button
-          type="button"
-          className={`pay-tab${tab === 'transactions' ? ' pay-tab--active' : ''}`}
-          onClick={() => setTab('transactions')}
-        >
-          Transactions
-        </button>
-        <button
-          type="button"
-          className={`pay-tab${tab === 'payouts' ? ' pay-tab--active' : ''}`}
-          onClick={() => setTab('payouts')}
-        >
-          Provider Payouts
-        </button>
-      </div>
-
-      {tab === 'transactions' ? (
-        <Transactions token={token} onLogout={onLogout} />
-      ) : (
-        <Payouts token={token} onLogout={onLogout} />
-      )}
+      <Transactions token={token} onLogout={onLogout} />
     </>
   )
 }
@@ -140,7 +113,7 @@ function Summary({ token, onLogout }: { token: string; onLogout: () => void }) {
   )
 }
 
-/* ---------- Transactions tab ---------- */
+/* ---------- Transactions ---------- */
 
 function txnRef(p: PaymentRow): string {
   return p.transactionReference || `#${p.id.slice(0, 8).toUpperCase()}`
@@ -383,134 +356,5 @@ function RefundModal({
         </div>
       </div>
     </div>
-  )
-}
-
-/* ---------- Provider Payouts tab ---------- */
-
-function Payouts({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const { page, setPage, data, loading, error, pageSize, reload } = usePagedList(
-    getPayouts,
-    token,
-    onLogout,
-  )
-  // Rows the admin has approved this session (id -> true), for optimistic UI.
-  const [approved, setApproved] = useState<Record<string, boolean>>({})
-  const [busyId, setBusyId] = useState<string | null>(null)
-  const [rowError, setRowError] = useState<string | null>(null)
-
-  const approve = useCallback(
-    async (row: PayoutRow) => {
-      setBusyId(row.id)
-      setRowError(null)
-      try {
-        await approvePayout(token, row.id)
-        setApproved((m) => ({ ...m, [row.id]: true }))
-      } catch (err) {
-        if (err instanceof UnauthorizedError) {
-          onLogout()
-          return
-        }
-        setRowError(err instanceof Error ? err.message : 'Approval failed.')
-      } finally {
-        setBusyId(null)
-      }
-    },
-    [token, onLogout],
-  )
-
-  if (error) {
-    return (
-      <div className="panelbox">
-        <p>{error}</p>
-        <button type="button" className="btn btn--sm" onClick={() => void reload()}>
-          Retry
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <section className="card">
-      {rowError && (
-        <div style={{ padding: '12px 18px 0' }}>
-          <div className="inline-error">{rowError}</div>
-        </div>
-      )}
-      <div className="tablewrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Provider</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading &&
-              Array.from({ length: pageSize }).map((_, i) => (
-                <tr key={i}>
-                  {Array.from({ length: 5 }).map((__, j) => (
-                    <td key={j}>
-                      <span className="skeleton skeleton--line" />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-
-            {!loading &&
-              data?.data.map((row, i) => {
-                const label = row.providerName || `#${row.providerId.slice(0, 8)}`
-                const isApproved = approved[row.id]
-                return (
-                  <tr key={row.id}>
-                    <td>
-                      <div className="cell-user">
-                        <Avatar name={label} tone={i + 1} />
-                        <span>{label}</span>
-                      </div>
-                    </td>
-                    <td className="muted">{moneyFull(row.amount)}</td>
-                    <td>
-                      <Badge {...payoutStatus(isApproved ? 'Approved' : row.status)} />
-                    </td>
-                    <td className="muted">{fullDate(row.createdAt)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="pay-act pay-act--approve"
-                        disabled={isApproved || busyId === row.id}
-                        onClick={() => void approve(row)}
-                      >
-                        {busyId === row.id ? '…' : isApproved ? 'Approved' : 'Approve'}
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-
-            {!loading && data?.data.length === 0 && (
-              <tr>
-                <td colSpan={5} className="empty">
-                  No payouts found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {data && (
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          totalCount={data.totalCount}
-          totalPages={data.totalPages}
-          onPage={setPage}
-        />
-      )}
-    </section>
   )
 }

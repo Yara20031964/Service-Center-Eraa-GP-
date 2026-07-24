@@ -140,6 +140,37 @@
   opacity: 0.55;
 }
 
+/* Sign out — pinned to the bottom of the sidebar */
+.side__logout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: auto;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.admin--collapsed .side__logout {
+  justify-content: center;
+  padding: 10px;
+}
+.side__logout:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.side__logout:hover .nav-item__icon {
+  color: var(--danger);
+}
+
 /* ---------- Main column ---------- */
 .main {
   min-width: 0;
@@ -660,6 +691,14 @@
   .side__nav {
     flex-direction: row;
     gap: 4px;
+  }
+  .side__logout {
+    margin-top: 0;
+    margin-left: auto;
+    width: auto;
+  }
+  .side__logout .nav-item__label {
+    display: inline;
   }
   .admin--collapsed .nav-item {
     padding: 10px 12px;
