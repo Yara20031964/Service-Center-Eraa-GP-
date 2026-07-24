@@ -44,6 +44,39 @@ async function authGet<T>(path: string, token: string): Promise<T> {
   return (await res.json()) as T
 }
 
+/** POST/PUT with the admin token; surfaces the server's message on failure. */
+async function authSend(
+  path: string,
+  token: string,
+  method: 'POST' | 'PUT',
+  body?: unknown,
+): Promise<void> {
+  let res: Response
+  try {
+    res = await fetch(path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new Error('Cannot reach the server. Check your connection and try again.')
+  }
+  if (res.status === 401 || res.status === 403) throw new UnauthorizedError()
+  if (!res.ok) {
+    let msg = `Request failed (${res.status}).`
+    try {
+      const j = (await res.json()) as { message?: string }
+      if (j?.message) msg = j.message
+    } catch {
+      /* no JSON body */
+    }
+    throw new Error(msg)
+  }
+}
+
 /* ---------- Response row types ---------- */
 
 export interface BookingRow {
@@ -211,6 +244,81 @@ export async function getProviderDetails(
     token,
   )
   return res.data
+}
+
+/* ---------- Payments ---------- */
+
+/** A row in the Transactions table (mirrors PaymentDto; enums arrive as ints). */
+export interface PaymentRow {
+  id: string
+  bookingId: string
+  amount: number
+  commissionAmount: number
+  providerEarning: number
+  /** PaymentStatus enum: 0 Pending, 1 Paid, 2 Failed, 3 Refunded. */
+  paymentStatus: number
+  transactionReference: string | null
+  paidAt: string | null
+  providerName: string | null
+  customerName: string | null
+}
+
+/** A row in the Provider Payouts table (mirrors PayoutDto). */
+export interface PayoutRow {
+  id: string
+  providerId: string
+  providerName: string | null
+  amount: number
+  status: string
+  createdAt: string
+}
+
+/** The two summary figures we can source today (from the dashboard summary). */
+export interface PaymentsSummary {
+  totalRevenue: number
+  pendingPayouts: number
+}
+
+/** Paginated transactions. `search` is accepted for usePagedList but unused. */
+export function getPayments(
+  token: string,
+  opts: { search?: string; page: number; pageSize: number },
+): Promise<PagedResponse<PaymentRow>> {
+  const query = qs({ page: opts.page, pageSize: opts.pageSize })
+  return authGet<PagedResponse<PaymentRow>>(`/api/admin/payments?${query}`, token)
+}
+
+/** Paginated provider payouts. `search` is accepted for usePagedList but unused. */
+export function getPayouts(
+  token: string,
+  opts: { search?: string; page: number; pageSize: number },
+): Promise<PagedResponse<PayoutRow>> {
+  const query = qs({ page: opts.page, pageSize: opts.pageSize })
+  return authGet<PagedResponse<PayoutRow>>(`/api/admin/payouts?${query}`, token)
+}
+
+/** Total revenue + pending payouts, read from the dashboard summary endpoint. */
+export async function loadPaymentsSummary(token: string): Promise<PaymentsSummary> {
+  const res = await authGet<
+    ApiResponse<{ revenue: { allTime: number; pendingPayouts: number } }>
+  >('/api/admin/dashboard/summary', token)
+  return {
+    totalRevenue: res.data?.revenue?.allTime ?? 0,
+    pendingPayouts: res.data?.revenue?.pendingPayouts ?? 0,
+  }
+}
+
+/** Issue a (full or partial) refund against a payment. */
+export function issueRefund(
+  token: string,
+  body: { paymentId: string; reason: string; refundAmount: number },
+): Promise<void> {
+  return authSend('/api/admin/payments/refund', token, 'POST', body)
+}
+
+/** Approve a pending provider payout. */
+export function approvePayout(token: string, id: string): Promise<void> {
+  return authSend(`/api/admin/payouts/${id}/approve`, token, 'PUT')
 }
 
 /** Approve or reject a pending provider application. */

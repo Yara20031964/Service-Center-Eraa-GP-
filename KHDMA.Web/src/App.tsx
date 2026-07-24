@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard/Dashboard'
 import Customers from './pages/Customers/Customers'
 import Providers from './pages/Providers/Providers'
 import Catalog from './pages/Catalog/Catalog'
+import Payments from './pages/Payments/Payments'
 
 // App shell: SignIn when signed out; otherwise the admin console with
 // state-based navigation between pages.
@@ -34,6 +35,7 @@ export default function App() {
       {page === 'customers' && <Customers session={session} onLogout={handleLogout} />}
       {page === 'providers' && <Providers session={session} onLogout={handleLogout} />}
       {page === 'catalog' && <Catalog session={session} onLogout={handleLogout} />}
+      {page === 'payments' && <Payments session={session} onLogout={handleLogout} />}
     </AdminLayout>
   )
 }

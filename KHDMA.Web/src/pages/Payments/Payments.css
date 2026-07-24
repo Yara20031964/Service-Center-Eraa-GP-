@@ -1,0 +1,178 @@
+/* ============================================================
+   Payments page. Layout + shared primitives (card, table, badge,
+   modal, pagination) live in src/layout/AdminLayout.css.
+   Payment-only pieces are prefixed `pay-` to avoid global clashes.
+   ============================================================ */
+
+/* Summary cards (mirrors the dashboard stat card) */
+.pay-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+.pay-stat {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 27, 51, 0.04);
+}
+.pay-stat__icon {
+  grid-row: 1 / 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.pay-stat__label {
+  align-self: end;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.pay-stat__value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+
+/* Tabs */
+.pay-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.pay-tab {
+  position: relative;
+  padding: 10px 4px;
+  margin-right: 20px;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.pay-tab:hover {
+  color: var(--ink);
+}
+.pay-tab--active {
+  color: var(--brand);
+}
+.pay-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+
+/* Amount cell: primary figure + commission sub-line */
+.pay-amount__main {
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.pay-amount__sub {
+  font-size: 11.5px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+/* Small inline action button (Refund / Approve) */
+.pay-act {
+  height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.pay-act:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: #f4f5f8;
+  color: var(--ink);
+}
+.pay-act--refund {
+  color: var(--brand);
+  border-color: var(--danger-border);
+}
+.pay-act--refund:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--brand);
+}
+.pay-act--approve {
+  color: #1c7a3a;
+  border-color: #bfe6c8;
+}
+.pay-act--approve:hover:not(:disabled) {
+  background: #e4f7e7;
+  border-color: #bfe6c8;
+  color: #1c7a3a;
+}
+.pay-act:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Refund modal fields */
+.pay-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.pay-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--label);
+}
+.pay-field input,
+.pay-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pay-field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+.pay-field input:focus,
+.pay-field textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px var(--brand-soft);
+}
+
+@media (max-width: 560px) {
+  .pay-stats {
+    grid-template-columns: 1fr;
+  }
+}

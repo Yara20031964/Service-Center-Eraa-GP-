@@ -210,7 +210,14 @@ public class AdminServiceService : IAdminServiceService
 
     private async Task<string> SaveFileAsync(IFormFile file, string folder)
     {
-        var uploadsPath = Path.Combine(_env.WebRootPath, "uploads", folder);
+        // WebRootPath is null when the published app has no wwwroot folder
+        // (common on shared hosts) - fall back to <contentRoot>/wwwroot and
+        // make sure the directory exists so uploads don't 500.
+        var webRoot = _env.WebRootPath;
+        if (string.IsNullOrEmpty(webRoot))
+            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+
+        var uploadsPath = Path.Combine(webRoot, "uploads", folder);
         Directory.CreateDirectory(uploadsPath);
         var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
         var filePath = Path.Combine(uploadsPath, fileName);

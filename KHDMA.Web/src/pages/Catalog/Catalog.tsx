@@ -19,6 +19,7 @@ import {
   type ServiceImage,
   type ServiceInput,
 } from '../../api/catalog'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import Toggle from '../../components/Toggle'
 import { PencilIcon, PlusIcon, Spinner, TrashIcon } from '../../components/icons'
 import './Catalog.css'
@@ -52,6 +53,11 @@ export default function Catalog({
   const [catEn, setCatEn] = useState('')
   const [catAr, setCatAr] = useState('')
   const [catBusy, setCatBusy] = useState(false)
+
+  // Delete-category confirmation
+  const [catToDelete, setCatToDelete] = useState<Category | null>(null)
+  const [delBusy, setDelBusy] = useState(false)
+  const [delError, setDelError] = useState<string | null>(null)
 
   const guard = useCallback(
     (err: unknown, set: (m: string) => void) => {
@@ -120,19 +126,30 @@ export default function Catalog({
     }
   }
 
-  async function onDeleteCategory(cat: Category) {
-    if (!window.confirm(`Delete category “${cat.nameEn}”? This can't be undone.`)) return
+  function askDeleteCategory(cat: Category) {
+    setDelError(null)
+    setCatToDelete(cat)
+  }
+
+  async function confirmDeleteCategory() {
+    if (!catToDelete) return
+    setDelBusy(true)
+    setDelError(null)
     try {
-      await deleteCategory(token, cat.id)
+      await deleteCategory(token, catToDelete.id)
       if (
-        (selection?.kind === 'new' && selection.categoryId === cat.id) ||
-        (selection?.kind === 'service' && selection.service.categoryId === cat.id)
+        (selection?.kind === 'new' && selection.categoryId === catToDelete.id) ||
+        (selection?.kind === 'service' &&
+          selection.service.categoryId === catToDelete.id)
       )
         setSelection(null)
       await loadCategories()
+      setCatToDelete(null)
     } catch (err) {
       if (err instanceof UnauthorizedError) onLogout()
-      else window.alert(err instanceof Error ? err.message : 'Delete failed.')
+      else setDelError(err instanceof Error ? err.message : 'Delete failed.')
+    } finally {
+      setDelBusy(false)
     }
   }
 
@@ -234,7 +251,7 @@ export default function Catalog({
                     <button
                       type="button"
                       className="iconlink iconlink--danger"
-                      onClick={() => void onDeleteCategory(cat)}
+                      onClick={() => askDeleteCategory(cat)}
                       aria-label={`Delete ${cat.nameEn}`}
                       title="Delete category"
                     >
@@ -309,6 +326,19 @@ export default function Catalog({
           }
         }}
       />
+
+      <ConfirmDialog
+        open={!!catToDelete}
+        title="Delete category"
+        message={`Delete “${catToDelete?.nameEn}”? This can't be undone.`}
+        busy={delBusy}
+        error={delError}
+        onConfirm={() => void confirmDeleteCategory()}
+        onCancel={() => {
+          setCatToDelete(null)
+          setDelError(null)
+        }}
+      />
     </div>
   )
 }
@@ -344,6 +374,9 @@ function ServiceEditor({
   const [existingImages, setExistingImages] = useState<ServiceImage[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [delBusy, setDelBusy] = useState(false)
+  const [delError, setDelError] = useState<string | null>(null)
 
   useEffect(() => {
     if (service) getServiceImages(token, service.id).then(setExistingImages).catch(() => {})
@@ -395,19 +428,18 @@ function ServiceEditor({
     }
   }
 
-  async function onDelete() {
+  async function runDelete() {
     if (!service) return
-    if (!window.confirm(`Delete “${service.nameEn}”? This can't be undone.`)) return
-    setBusy(true)
-    setError(null)
+    setDelBusy(true)
+    setDelError(null)
     try {
       await deleteService(token, service.id)
       await onSaved(service.categoryId, service.id) // reloads; selection clears
     } catch (err) {
       if (err instanceof UnauthorizedError) onLogout()
-      else setError(err instanceof Error ? err.message : 'Delete failed.')
+      else setDelError(err instanceof Error ? err.message : 'Delete failed.')
     } finally {
-      setBusy(false)
+      setDelBusy(false)
     }
   }
 
@@ -519,7 +551,15 @@ function ServiceEditor({
 
       <div className="editor__foot">
         {!isNew && (
-          <button type="button" className="linkbtn linkbtn--danger" onClick={() => void onDelete()} disabled={busy}>
+          <button
+            type="button"
+            className="linkbtn linkbtn--danger"
+            onClick={() => {
+              setDelError(null)
+              setConfirmDelete(true)
+            }}
+            disabled={busy}
+          >
             Delete Service
           </button>
         )}
@@ -527,6 +567,19 @@ function ServiceEditor({
           {busy ? <Spinner /> : isNew ? 'Create Service' : 'Save Changes'}
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete service"
+        message={`Delete “${service?.nameEn}”? This can't be undone.`}
+        busy={delBusy}
+        error={delError}
+        onConfirm={() => void runDelete()}
+        onCancel={() => {
+          setConfirmDelete(false)
+          setDelError(null)
+        }}
+      />
     </section>
   )
 }

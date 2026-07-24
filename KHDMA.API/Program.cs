@@ -29,6 +29,10 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 
+// Ensure wwwroot exists before the host resolves WebRootPath, so uploaded files
+// can be saved to and served from /uploads on hosts that ship without wwwroot.
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+
 var builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
