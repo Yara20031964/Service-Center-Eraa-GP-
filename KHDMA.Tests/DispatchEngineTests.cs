@@ -151,8 +151,8 @@ public class DispatchEngineTests
         // every round of expansion.
         await using var setup = harness.NewContext();
         await setup.Providers.ExecuteUpdateAsync(s => s
-            .SetProperty(p => p.CurrentLatitude, 31.2001)
-            .SetProperty(p => p.CurrentLongitude, 29.9187));
+            .SetProperty(p => p.WorkingLatitude, 31.2001)
+            .SetProperty(p => p.WorkingLongitude, 29.9187));
 
         var bookingId = harness.SeedBooking(world, BookingStatus.Pending);
 

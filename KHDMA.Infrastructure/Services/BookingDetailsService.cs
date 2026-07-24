@@ -4,6 +4,7 @@ using KHDMA.Application.DTOs.Booking;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace KHDMA.Infrastructure.Services;
 
@@ -11,11 +12,14 @@ public class BookingDetailsService : IBookingDetailsService
 {
     private readonly AppDbContext _db;
     private readonly IImageUrlResolver _imageUrlResolver;
+    private readonly VatSettings _vat;
 
-    public BookingDetailsService(AppDbContext db, IImageUrlResolver imageUrlResolver)
+    public BookingDetailsService(
+        AppDbContext db, IImageUrlResolver imageUrlResolver, IOptions<VatSettings> vat)
     {
         _db = db;
         _imageUrlResolver = imageUrlResolver;
+        _vat = vat.Value;
     }
 
     public async Task<ApiResponse<BookingDetailDto>> GetAsync(Guid bookingId, string userId)
@@ -27,6 +31,8 @@ public class BookingDetailsService : IBookingDetailsService
                 .ThenInclude(c => c.ApplicationUser)
             .Include(b => b.Provider)
                 .ThenInclude(p => p!.ApplicationUser)
+            .Include(b => b.Review)
+            .Include(b => b.Payment)
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking is null)
@@ -34,6 +40,8 @@ public class BookingDetailsService : IBookingDetailsService
 
         if (booking.CustomerId != userId && booking.ProviderId != userId)
             return ApiResponse<BookingDetailDto>.Forbidden();
+
+        var isAssignedProvider = booking.ProviderId == userId;
 
         // Mapping stays in memory because unassigned bookings have no Provider,
         // and expression trees cannot contain the null-conditional operators.
@@ -51,6 +59,8 @@ public class BookingDetailsService : IBookingDetailsService
                 ProviderPhoto = _imageUrlResolver.Resolve(b.Provider?.ApplicationUser?.ProfilePictureUrl),
                 ServiceId = b.ServiceId,
                 ServiceName = b.Service?.NameEn ?? string.Empty,
+                ServiceNameEn = b.Service?.NameEn ?? string.Empty,
+                ServiceNameAr = b.Service?.NameAr ?? string.Empty,
                 BookingType = b.BookingType,
                 ScheduledTime = b.ScheduledTime,
                 Address = b.Address,
@@ -69,6 +79,29 @@ public class BookingDetailsService : IBookingDetailsService
                 StartedAt = b.StartedAt,
                 CompletedAt = b.CompletedAt,
                 CancelledAt = b.CancelledAt,
+                CancellationFee = b.CancellationFee,
+                CustomerPhone = isAssignedProvider
+                    ? b.Customer?.ApplicationUser?.PhoneNumber
+                    : null,
+                ProviderEarning = isAssignedProvider ? b.Payment?.ProviderEarning : null,
+                Currency = isAssignedProvider ? _vat.Currency : null,
+                // Hidden reviews stay visible to the two participants - hiding is
+                // admin moderation for the public provider listing, and the author
+                // still needs to see and edit their own review.
+                Review = b.Review is null || b.Review.IsDeleted
+                    ? null
+                    : new BookingReviewDto
+                    {
+                        Id = b.Review.Id,
+                        Rating = b.Review.Rating,
+                        Comment = b.Review.Comment,
+                        ProviderReply = b.Review.ProviderReply,
+                        ProviderReplyAt = b.Review.ProviderReplyAt,
+                        PunctualityRating = b.Review.PunctualityRating,
+                        WorkQualityRating = b.Review.WorkQualityRating,
+                        CleanlinessRating = b.Review.CleanlinesRating,
+                        CreateAt = b.Review.CreateAt,
+                    },
             })
             .Single();
 

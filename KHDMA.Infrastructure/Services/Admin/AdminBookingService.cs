@@ -6,6 +6,7 @@ using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
 using Domain.Common;
 using KHDMA.Application.DTOs.Admin;
+using KHDMA.Application.Interfaces.RealTime;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Infrastructure.Data;
@@ -16,11 +17,16 @@ namespace KHDMA.Infrastructure.Services.Admin
     {
         private readonly AppDbContext _context;
         private readonly IImageUrlResolver _imageUrlResolver;
+        private readonly IBookingNotifier _notifier;
 
-        public AdminBookingService(AppDbContext context, IImageUrlResolver imageUrlResolver)
+        public AdminBookingService(
+            AppDbContext context,
+            IImageUrlResolver imageUrlResolver,
+            IBookingNotifier notifier)
         {
             _context = context;
             _imageUrlResolver = imageUrlResolver;
+            _notifier = notifier;
         }
 
         public async Task<PagedResponse<BookingListDto>> GetAllBookingsAsync(int pageNumber, int pageSize, BookingStatus? status, DateTime? fromDate, DateTime? toDate, string? customerId, string? providerId)
@@ -136,10 +142,23 @@ namespace KHDMA.Infrastructure.Services.Admin
             var booking = await _context.Bookings.FindAsync(bookingId);
             if (booking == null) return ApiResponse<bool>.NotFound("Booking not found");
 
+            var assignedProviderId = booking.ProviderId;
+
             booking.Status = BookingStatus.Cancelled;
             booking.CancelReason = reason;
+            booking.CancelledAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Same reason as the customer-facing path: without this the assigned
+            // provider keeps working a booking that no longer exists, and the
+            // customer's screen never learns the admin closed it.
+            if (!string.IsNullOrEmpty(assignedProviderId))
+                await _notifier.JobCancelledAsync(assignedProviderId, booking.Id, reason);
+
+            await _notifier.BookingStatusChangedAsync(
+                booking.Id, BookingStatus.Cancelled, message: reason);
+
             return ApiResponse<bool>.Ok(true, "Booking cancelled successfully");
         }
 

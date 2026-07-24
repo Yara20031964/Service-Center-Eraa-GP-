@@ -111,8 +111,15 @@ namespace KHDMA.Infrastructure.Services
                 JobTitle = dto.JobTitle,
                 ExperienceYears = dto.ExperienceYears,
                 Description = dto.Description,
+                // Seeds both: at sign-up the stated point is the working area, and it
+                // is also the only position known until live tracking runs.
+                WorkingLatitude = dto.CurrentLatitude,
+                WorkingLongitude = dto.CurrentLongitude,
                 CurrentLatitude = dto.CurrentLatitude,
                 CurrentLongitude = dto.CurrentLongitude,
+                LocationUpdatedAt = dto.CurrentLatitude.HasValue && dto.CurrentLongitude.HasValue
+                    ? DateTime.UtcNow
+                    : null,
                 State = ProviderState.Pending,
                 AvailabilityStatus = availabilityStatus
             };
@@ -194,6 +201,29 @@ namespace KHDMA.Infrastructure.Services
 
             if (existing == null)
                 return AuthResponseDto.Fail("Invalid or expired refresh token");
+
+            // Re-checked on every renewal, not only at login. Access tokens are
+            // short-lived but refresh tokens are not, so without this a user
+            // suspended, banned or deleted mid-session keeps minting fresh
+            // access tokens until their refresh token expires - which is how a
+            // suspended provider stayed able to call the API for hours.
+            if (existing.User.Status == UserStatus.Suspended || existing.User.Status == UserStatus.Banned)
+            {
+                existing.IsRevoked = true;
+                existing.RevokedAt = DateTime.UtcNow;
+                _context.RefreshTokens.Update(existing);
+                await _context.SaveChangesAsync();
+                return AuthResponseDto.Fail("Your account is suspended. Please contact support.");
+            }
+
+            if (existing.User.IsDeleted)
+            {
+                existing.IsRevoked = true;
+                existing.RevokedAt = DateTime.UtcNow;
+                _context.RefreshTokens.Update(existing);
+                await _context.SaveChangesAsync();
+                return AuthResponseDto.Fail("Your account has been deleted. Please contact support.");
+            }
 
             existing.IsRevoked = true;
             existing.RevokedAt = DateTime.UtcNow;

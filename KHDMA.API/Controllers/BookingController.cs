@@ -28,11 +28,52 @@ namespace KHDMA.API.Controllers
     {
         private readonly IMediator _mediator;
         private readonly IBookingDetailsService _bookingDetails;
+        private readonly IPricingService _pricing;
 
-        public BookingController(IMediator mediator, IBookingDetailsService bookingDetails)
+        public BookingController(
+            IMediator mediator,
+            IBookingDetailsService bookingDetails,
+            IPricingService pricing)
         {
             _mediator = mediator;
             _bookingDetails = bookingDetails;
+            _pricing = pricing;
+        }
+
+        /// <summary>
+        /// What a service will cost, without creating anything.
+        /// </summary>
+        /// <remarks>
+        /// The checkout screen used to obtain its figures by creating the booking,
+        /// which meant the customer saw the price only after dispatch had already
+        /// started broadcasting to providers - and backing out of that screen left a
+        /// live booking behind. This returns the same numbers from the same
+        /// <see cref="IPricingService"/> the create handler uses, so quoting and
+        /// charging can never diverge.
+        /// </remarks>
+        [HttpGet("quote")]
+        [ProducesResponseType<ApiResponse<PriceBreakdownDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<PriceBreakdownDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<PriceBreakdownDto>>(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Quote([FromQuery] Guid serviceId)
+        {
+            var price = await _pricing.ForServiceAsync(serviceId);
+            if (price is null)
+            {
+                var missing = ApiResponse<PriceBreakdownDto>.NotFound("Service not found");
+                return StatusCode(missing.StatusCode, missing);
+            }
+
+            var result = ApiResponse<PriceBreakdownDto>.Ok(new PriceBreakdownDto
+            {
+                ServiceFee = price.ServiceFee,
+                VatRate = price.VatRate,
+                VatAmount = price.VatAmount,
+                Total = price.Total,
+                Currency = price.Currency,
+            });
+
+            return StatusCode(result.StatusCode, result);
         }
 
         /// <summary>
@@ -114,9 +155,16 @@ namespace KHDMA.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        /// <summary>
+        /// Cancels the caller's own booking. Allowed at any point before the job
+        /// closes; outside the free window the policy's flat fee is recorded on the
+        /// booking and named in the response message.
+        /// </summary>
         [HttpDelete("{id}")]
         [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
         [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status403Forbidden)]
         [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Cancel(Guid id, [FromBody] string reason)
         {
@@ -132,7 +180,7 @@ namespace KHDMA.API.Controllers
             };
 
             var result = await _mediator.Send(command);
-            return result ? Ok(ApiResponse<bool>.Ok(true, "Cancelled successfully")) : NotFound(ApiResponse<bool>.NotFound());
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpPost("admin/{id}/cancel")]
@@ -153,7 +201,7 @@ namespace KHDMA.API.Controllers
             };
 
             var result = await _mediator.Send(command);
-            return result ? Ok(ApiResponse<bool>.Ok(true, "Admin cancelled successfully")) : NotFound(ApiResponse<bool>.NotFound());
+            return StatusCode(result.StatusCode, result);
         }
 
         /// <summary>

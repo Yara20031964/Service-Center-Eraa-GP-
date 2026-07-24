@@ -76,7 +76,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet("certificates")]
-    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<ProfileImageDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCertificateImages()
     {
         var result = await _service.GetCertificateImagesAsync(UserId);
@@ -84,7 +84,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost("certificates")]
-    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<ProfileImageDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> AddCertificateImages([FromForm] List<IFormFile> images)
     {
         var result = await _service.AddCertificateImagesAsync(UserId, images);
@@ -101,7 +101,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet("portfolio")]
-    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<ProfileImageDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPortfolioImages()
     {
         var result = await _service.GetPortfolioImagesAsync(UserId);
@@ -109,7 +109,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost("portfolio")]
-    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<ProfileImageDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> AddPortfolioImages([FromForm] List<IFormFile> images)
     {
         var result = await _service.AddPortfolioImagesAsync(UserId, images);

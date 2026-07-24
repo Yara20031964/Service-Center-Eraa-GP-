@@ -59,7 +59,8 @@ namespace KHDMA.Infrastructure.Services
                 .Where(p => p.ApplicationUserId == providerId)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(p => p.CurrentLatitude, dto.Latitude)
-                    .SetProperty(p => p.CurrentLongitude, dto.Longitude));
+                    .SetProperty(p => p.CurrentLongitude, dto.Longitude)
+                    .SetProperty(p => p.LocationUpdatedAt, point.UpdatedAt));
 
             var active = await _db.Bookings
                 .AsNoTracking()
@@ -98,8 +99,57 @@ namespace KHDMA.Infrastructure.Services
 
         public async Task<ApiResponse<EtaDto>> GetEtaAsync(Guid bookingId, string requestingUserId)
         {
+            var (endpoints, error) = await ResolveEndpointsAsync<EtaDto>(bookingId, requestingUserId);
+            if (error is not null) return error;
+
+            var (minutes, distanceKm, source) = await _eta.EstimateAsync(
+                endpoints!.FromLat, endpoints.FromLng, endpoints.ToLat, endpoints.ToLng);
+
+            return ApiResponse<EtaDto>.Ok(new EtaDto
+            {
+                BookingId = bookingId,
+                EtaMinutes = minutes,
+                DistanceKm = distanceKm,
+                Source = source,
+                CalculatedAt = DateTime.UtcNow,
+            });
+        }
+
+        public async Task<ApiResponse<RouteDto>> GetRouteAsync(Guid bookingId, string requestingUserId)
+        {
+            var (endpoints, error) = await ResolveEndpointsAsync<RouteDto>(bookingId, requestingUserId);
+            if (error is not null) return error;
+
+            var (polyline, minutes, distanceKm, source) = await _eta.RouteAsync(
+                endpoints!.FromLat, endpoints.FromLng, endpoints.ToLat, endpoints.ToLng);
+
+            return ApiResponse<RouteDto>.Ok(new RouteDto
+            {
+                BookingId = bookingId,
+                OriginLatitude = endpoints.FromLat,
+                OriginLongitude = endpoints.FromLng,
+                DestinationLatitude = endpoints.ToLat,
+                DestinationLongitude = endpoints.ToLng,
+                Polyline = polyline,
+                EtaMinutes = minutes,
+                DistanceKm = distanceKm,
+                Source = source,
+                CalculatedAt = DateTime.UtcNow,
+            });
+        }
+
+        private sealed record RouteEndpoints(double FromLat, double FromLng, double ToLat, double ToLng);
+
+        /// <summary>
+        /// Access check plus the two points every travel calculation needs. Shared
+        /// so the ETA and the drawn route can never disagree about where either end
+        /// of the journey is.
+        /// </summary>
+        private async Task<(RouteEndpoints? Endpoints, ApiResponse<T>? Error)> ResolveEndpointsAsync<T>(
+            Guid bookingId, string requestingUserId)
+        {
             if (!await _access.IsParticipantAsync(bookingId, requestingUserId))
-                return ApiResponse<EtaDto>.Forbidden("You are not a participant in this booking");
+                return (null, ApiResponse<T>.Forbidden("You are not a participant in this booking"));
 
             var booking = await _db.Bookings
                 .AsNoTracking()
@@ -107,13 +157,13 @@ namespace KHDMA.Infrastructure.Services
                 .Select(b => new { b.Id, b.ProviderId, b.Latitude, b.Longitude, b.Status })
                 .FirstOrDefaultAsync();
 
-            if (booking is null) return ApiResponse<EtaDto>.NotFound("Booking not found");
+            if (booking is null) return (null, ApiResponse<T>.NotFound("Booking not found"));
 
             if (booking.ProviderId is null)
-                return ApiResponse<EtaDto>.Fail("No provider has been assigned yet", 409);
+                return (null, ApiResponse<T>.Fail("No provider has been assigned yet", 409));
 
             if (booking.Latitude is null || booking.Longitude is null)
-                return ApiResponse<EtaDto>.Fail("This booking has no destination coordinates", 409);
+                return (null, ApiResponse<T>.Fail("This booking has no destination coordinates", 409));
 
             // The live cached position is more current than the Provider row, so
             // prefer it and fall back only when the TTL has lapsed.
@@ -131,27 +181,24 @@ namespace KHDMA.Infrastructure.Services
                 var last = await _db.Providers
                     .AsNoTracking()
                     .Where(p => p.ApplicationUserId == booking.ProviderId)
-                    .Select(p => new { p.CurrentLatitude, p.CurrentLongitude })
+                    .Select(p => new
+                    {
+                        Latitude = p.CurrentLatitude ?? p.WorkingLatitude,
+                        Longitude = p.CurrentLongitude ?? p.WorkingLongitude,
+                    })
                     .FirstOrDefaultAsync();
 
-                if (last?.CurrentLatitude is null || last.CurrentLongitude is null)
-                    return ApiResponse<EtaDto>.Fail("The provider's location is not available", 409);
+                if (last?.Latitude is null || last.Longitude is null)
+                    return (null, ApiResponse<T>.Fail("The provider's location is not available", 409));
 
-                providerLat = last.CurrentLatitude.Value;
-                providerLng = last.CurrentLongitude.Value;
+                // Last live fix if there is one; otherwise the working point, which is
+                // a fair guess for a provider who has not started moving yet.
+                providerLat = last.Latitude.Value;
+                providerLng = last.Longitude.Value;
             }
 
-            var (minutes, distanceKm, source) = await _eta.EstimateAsync(
-                providerLat, providerLng, booking.Latitude.Value, booking.Longitude.Value);
-
-            return ApiResponse<EtaDto>.Ok(new EtaDto
-            {
-                BookingId = bookingId,
-                EtaMinutes = minutes,
-                DistanceKm = distanceKm,
-                Source = source,
-                CalculatedAt = DateTime.UtcNow,
-            });
+            return (new RouteEndpoints(
+                providerLat, providerLng, booking.Latitude.Value, booking.Longitude.Value), null);
         }
     }
 }

@@ -189,6 +189,8 @@ namespace KHDMA.Infrastructure.Data
                 ApplicationUserId = user.Id,
                 State = state,
                 AvailabilityStatus = availability,
+                WorkingLatitude = lat,
+                WorkingLongitude = lng,
                 CurrentLatitude = lat,
                 CurrentLongitude = lng,
                 JobTitle = jobTitle,

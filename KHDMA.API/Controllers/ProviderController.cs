@@ -52,4 +52,45 @@ public class ProviderController : ControllerBase
         var result = await _providerJobs.UpdateAvailabilityAsync(providerId, dto);
         return StatusCode(result.StatusCode, result);
     }
+
+    /// <summary>
+    /// The active catalogue with an <c>isOffered</c> flag per service. Dispatch
+    /// only offers a booking to a provider who offers that service, so an empty
+    /// selection means no jobs at all.
+    /// </summary>
+    [HttpGet("services")]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetServices()
+    {
+        var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(providerId))
+        {
+            var unauthorized = ApiResponse<List<ProviderServiceDto>>.Unauthorized();
+            return StatusCode(unauthorized.StatusCode, unauthorized);
+        }
+
+        var result = await _providerJobs.GetServicesAsync(providerId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    /// <summary>Replaces the provider's offered services with the given set.</summary>
+    [HttpPut("services")]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiResponse<List<ProviderServiceDto>>>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateServices([FromBody] UpdateProviderServicesDto dto)
+    {
+        var providerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(providerId))
+        {
+            var unauthorized = ApiResponse<List<ProviderServiceDto>>.Unauthorized();
+            return StatusCode(unauthorized.StatusCode, unauthorized);
+        }
+
+        var result = await _providerJobs.UpdateServicesAsync(providerId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
 }

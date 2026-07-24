@@ -41,3 +41,31 @@ public class ProviderAvailabilityDto
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
 }
+
+/// <summary>
+/// One catalogue service, flagged with whether this provider offers it.
+/// </summary>
+/// <remarks>
+/// The whole active catalogue is returned rather than only the provider's own
+/// rows, so the editor needs a single call: the client filters on
+/// <see cref="IsOffered"/> to display and toggles it to edit. Splitting this
+/// would leave the client reconciling two sets itself.
+/// </remarks>
+public class ProviderServiceDto
+{
+    public Guid ServiceId { get; set; }
+    public string NameEn { get; set; } = string.Empty;
+    public string NameAr { get; set; } = string.Empty;
+    public string CategoryNameEn { get; set; } = string.Empty;
+    public string CategoryNameAr { get; set; } = string.Empty;
+    public string? Image { get; set; }
+    public decimal? FixedPrice { get; set; }
+    public bool IsOffered { get; set; }
+}
+
+/// <summary>Replaces the provider's offered set with exactly these services.</summary>
+public class UpdateProviderServicesDto
+{
+    [Required]
+    public List<Guid> ServiceIds { get; set; } = [];
+}

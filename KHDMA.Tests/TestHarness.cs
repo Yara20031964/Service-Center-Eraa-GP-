@@ -110,6 +110,8 @@ public sealed class TestHarness : IDisposable
                 AvailabilityStatus = AvailabilityStatus.Online,
                 // Spread them a few hundred metres apart so distance ordering is
                 // deterministic but everyone stays inside the 10km first round.
+                WorkingLatitude = customerLat + i * 0.005,
+                WorkingLongitude = customerLng + i * 0.005,
                 CurrentLatitude = customerLat + i * 0.005,
                 CurrentLongitude = customerLng + i * 0.005,
                 JobTitle = "Plumber",
