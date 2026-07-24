@@ -56,4 +56,11 @@ public class AdminCategoriesController : ControllerBase
         var result = await _service.ToggleActiveAsync(id);
         return StatusCode(result.StatusCode, result);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var result = await _service.DeleteAsync(id);
+        return StatusCode(result.StatusCode, result);
+    }
 }

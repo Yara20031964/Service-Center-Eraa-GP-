@@ -58,6 +58,13 @@ public class AdminServicesController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var result = await _service.DeleteAsync(id);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("{id}/images")]
     public async Task<IActionResult> GetImages(Guid id)
     {
