@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.Admin;
+using Domain.Common;
 using KHDMA.Application.Interfaces.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,7 @@ public class AdminUsersController : ControllerBase
 
     // GET api/admin/users/admins?search=&page=1&pageSize=10
     [HttpGet("admins")]
+    [ProducesResponseType<PagedResponse<AdminUserDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,
         [FromQuery] int page = 1,
@@ -31,6 +33,8 @@ public class AdminUsersController : ControllerBase
 
     // GET api/admin/users/admins/{id}
     [HttpGet("admins/{id}")]
+    [ProducesResponseType<ApiResponse<AdminUserDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<AdminUserDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(string id)
     {
         var result = await _service.GetAdminByIdAsync(id);
@@ -39,6 +43,8 @@ public class AdminUsersController : ControllerBase
 
     // POST api/admin/users/admins
     [HttpPost("admins")]
+    [ProducesResponseType<ApiResponse<AdminUserDto>>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ApiResponse<AdminUserDto>>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateAdminDto dto)
     {
         var result = await _service.CreateAdminAsync(dto);
@@ -47,6 +53,9 @@ public class AdminUsersController : ControllerBase
 
     // PUT api/admin/users/admins/{id}/deactivate
     [HttpPut("admins/{id}/deactivate")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(string id)
     {
         var result = await _service.DeactivateAdminAsync(id);

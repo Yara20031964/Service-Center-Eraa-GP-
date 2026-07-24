@@ -1,5 +1,6 @@
 using Domain.Common;
 using KHDMA.Application.DTOs.Catalog;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
 using KHDMA.Infrastructure.Data;
@@ -13,11 +14,16 @@ public class AdminServiceService : IAdminServiceService
 {
     private readonly AppDbContext _context;
     private readonly IWebHostEnvironment _env;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public AdminServiceService(AppDbContext context, IWebHostEnvironment env)
+    public AdminServiceService(
+        AppDbContext context,
+        IWebHostEnvironment env,
+        IImageUrlResolver imageUrlResolver)
     {
         _context = context;
         _env = env;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<PagedResponse<ServiceDto>> GetAllAsync(string? search, Guid? categoryId, bool? isActive, int page, int pageSize)
@@ -213,20 +219,20 @@ public class AdminServiceService : IAdminServiceService
         return $"/uploads/{folder}/{fileName}";
     }
 
-    private static ServiceDto MapToDto(Service s) => new()
+    private ServiceDto MapToDto(Service s) => new()
     {
         Id = s.id,
         CategoryId = s.CategoryId,
         NameEn = s.NameEn,
         NameAr = s.NameAr,
         Description = s.Description,
-        Image = s.Image,
+        Image = _imageUrlResolver.Resolve(s.Image),
         FixedPrice = s.FixedPrice,
         EstimatedDurationMin = s.EstimatedDurationMin,
         EstimatedDurationMax = s.EstimatedDurationMax,
         Rating = s.Rating,
         ReviewCount = s.ReviewCount,
         IsActive = s.IsActive,
-        ImageUrls = s.Images?.Select(i => i.ImageUrl).ToList() ?? []
+        ImageUrls = s.Images?.Select(i => _imageUrlResolver.Resolve(i.ImageUrl)!).ToList() ?? []
     };
 }

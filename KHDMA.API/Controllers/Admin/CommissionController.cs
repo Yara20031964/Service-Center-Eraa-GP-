@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.Admin;
+using Domain.Common;
 using KHDMA.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,8 @@ public class CommissionController : ControllerBase
 
     // GET api/admin/commission
     [HttpGet]
+    [ProducesResponseType<ApiResponse<CommissionDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<CommissionDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCurrent()
     {
         var result = await _service.GetCurrentRateAsync();
@@ -28,6 +31,9 @@ public class CommissionController : ControllerBase
 
     // PUT api/admin/commission
     [HttpPut]
+    [ProducesResponseType<ApiResponse<CommissionDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<CommissionDto>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<CommissionDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update([FromBody] UpdateCommissionDto dto)
     {
         var adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value

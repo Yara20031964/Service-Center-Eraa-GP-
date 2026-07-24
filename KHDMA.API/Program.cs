@@ -159,9 +159,9 @@ builder.Services.AddScoped<IAdminBookingService, AdminBookingService>();
 builder.Services.AddScoped<IAdminPaymentService, AdminPaymentService>();
 builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<IEarningsService, EarningsService>();
-builder.Services.AddScoped<KHDMA.Application.Interfaces.Services.IStripePaymentService,
-    KHDMA.Infrastructure.Services.Payment.StripePaymentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IImageUrlResolver, ImageUrlResolver>();
 builder.Services.AddScoped<IAdminCategoryService, AdminCategoryService>();
 builder.Services.AddScoped<IAdminServiceService, AdminServiceService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -179,6 +179,8 @@ builder.Services.AddScoped<IBookingAccessService, BookingAccessService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IPublicCatalogService, PublicCatalogService>();
+builder.Services.AddScoped<IBookingDetailsService, BookingDetailsService>();
+builder.Services.AddScoped<IProviderJobsService, ProviderJobsService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddHttpClient<IEtaProvider, EtaProvider>();
 
@@ -299,6 +301,10 @@ builder.Services.AddSwaggerGen(c =>
             "Section 26 needs no token at all.",
     });
 
+    // Three DTO names exist twice in different namespaces, which collides once
+    // both halves are reachable as declared response types - see SchemaIds.
+    c.CustomSchemaIds(SchemaIds.For);
+
     // Sections come from [Tags(ApiTags.X)] on the controller - or on the action,
     // where one controller serves several roles - and are ordered by the filter.
     c.TagActionsBy(ApiTags.SelectFor);
@@ -348,7 +354,8 @@ app.UseSwaggerUI(c =>
     c.DefaultModelsExpandDepth(-1);
 });
 app.UseStaticFiles();
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.UseCors("AllowFrontends");
 app.UseAuthentication();
 app.UseAuthorization();

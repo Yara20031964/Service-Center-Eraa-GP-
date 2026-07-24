@@ -1,4 +1,6 @@
 using Application.DTOs.Admin;
+using Domain.Common;
+using KHDMA.Application.DTOs.Admin;
 using KHDMA.Application.Interfaces.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +22,7 @@ public class AdminProvidersController : ControllerBase
 
     // GET api/admin/users/providers/pending?page=1&pageSize=10
     [HttpGet("providers/pending")]
+    [ProducesResponseType<PagedResponse<ProviderApplicationDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
@@ -30,6 +33,8 @@ public class AdminProvidersController : ControllerBase
 
     // PUT api/admin/users/providers/5/approve-reject
     [HttpPut("providers/{id}/approve-reject")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ApproveOrReject(string id, [FromBody] ApproveRejectDto dto)
     {
         var result = await _service.ApproveOrRejectApplicationAsync(id, dto);
@@ -38,6 +43,7 @@ public class AdminProvidersController : ControllerBase
 
     // GET api/admin/users/providers?search=ahmed&page=1&pageSize=10
     [HttpGet("providers")]
+    [ProducesResponseType<PagedResponse<ProviderDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,
         [FromQuery] int page = 1,
@@ -49,6 +55,8 @@ public class AdminProvidersController : ControllerBase
 
     // GET api/admin/users/providers/5
     [HttpGet("providers/{id}")]
+    [ProducesResponseType<ApiResponse<ProviderDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<ProviderDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(string id)
     {
         var result = await _service.GetProviderByIdAsync(id);
@@ -57,6 +65,9 @@ public class AdminProvidersController : ControllerBase
 
     // PUT api/admin/users/providers/5/suspend
     [HttpPut("providers/{id}/suspend")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Suspend(string id)
     {
         var result = await _service.SuspendProviderAsync(id);
@@ -65,6 +76,9 @@ public class AdminProvidersController : ControllerBase
 
     // PUT api/admin/users/providers/5/ban
     [HttpPut("providers/{id}/ban")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Ban(string id)
     {
         var result = await _service.BanProviderAsync(id);
@@ -73,6 +87,9 @@ public class AdminProvidersController : ControllerBase
 
     // PUT api/admin/users/providers/5/restore
     [HttpPut("providers/{id}/restore")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Restore(string id)
     {
         var result = await _service.RestoreProviderAsync(id);
@@ -80,6 +97,8 @@ public class AdminProvidersController : ControllerBase
     }
 
     [HttpGet("providers/{id}/performance")]
+    [ProducesResponseType<ApiResponse<ProviderPerformanceDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<ProviderPerformanceDto>>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetPerformance(string id)
     {
         var result = await _service.GetProviderPerformanceAsync(id);

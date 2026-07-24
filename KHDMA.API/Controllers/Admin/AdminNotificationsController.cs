@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using KHDMA.Application.DTOs;
 using KHDMA.Application.Interfaces.Services;
@@ -19,6 +20,7 @@ namespace KHDMA.API.Controllers.Admin
         }
 
         [HttpPost("broadcast")]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Broadcast([FromBody] SendBroadcastDto dto)
         {
             // TODO: implement
@@ -26,6 +28,7 @@ namespace KHDMA.API.Controllers.Admin
         }
 
         [HttpPost("send/{userId}")]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> SendToUser(string userId, [FromBody] SendBroadcastDto dto)
         {
             // TODO: implement

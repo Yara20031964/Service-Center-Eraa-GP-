@@ -1,3 +1,6 @@
+using Domain.Common;
+using KHDMA.Application.DTOs.Admin;
+using KHDMA.Application.DTOs.Catalog;
 using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +23,7 @@ namespace KHDMA.API.Controllers
         public PublicCatalogController(IPublicCatalogService catalog) => _catalog = catalog;
 
         [HttpGet("categories/public")]
+        [ProducesResponseType<ApiResponse<List<PublicCategoryDto>>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCategories()
         {
             var result = await _catalog.GetCategoriesAsync();
@@ -27,6 +31,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("services/public")]
+        [ProducesResponseType<PagedResponse<PublicServiceDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetServices(
             [FromQuery] Guid? categoryId,
             [FromQuery] string? search,
@@ -38,13 +43,33 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("services/public/{id:guid}")]
+        [ProducesResponseType<ApiResponse<PublicServiceDetailDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<PublicServiceDetailDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetService(Guid id)
         {
             var result = await _catalog.GetServiceByIdAsync(id);
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("providers/public")]
+        [ProducesResponseType<PagedResponse<PublicProviderCardDto>>(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetProviders(
+            [FromQuery] Guid? category,
+            [FromQuery] string? search,
+            [FromQuery] double? lat,
+            [FromQuery] double? lng,
+            [FromQuery] double? radiusKm,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _catalog.GetProvidersAsync(
+                category, search, lat, lng, radiusKm, page, pageSize);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("providers/{id}/public")]
+        [ProducesResponseType<ApiResponse<ProviderPublicProfileDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<ProviderPublicProfileDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProviderProfile(string id)
         {
             var result = await _catalog.GetProviderProfileAsync(id);
@@ -64,6 +89,7 @@ namespace KHDMA.API.Controllers
         public AdminDashboardController(IAdminDashboardService dashboard) => _dashboard = dashboard;
 
         [HttpGet("summary")]
+        [ProducesResponseType<ApiResponse<DashboardSummaryDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSummary()
         {
             var result = await _dashboard.GetSummaryAsync();

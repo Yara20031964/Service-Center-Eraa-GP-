@@ -17,5 +17,9 @@ namespace KHDMA.Application.Interfaces.Services
         Task<ApiResponse<PublicServiceDetailDto>> GetServiceByIdAsync(Guid id);
 
         Task<ApiResponse<ProviderPublicProfileDto>> GetProviderProfileAsync(string providerId);
+
+        Task<PagedResponse<PublicProviderCardDto>> GetProvidersAsync(
+            Guid? category, string? search, double? lat, double? lng,
+            double? radiusKm, int page, int pageSize);
     }
 }

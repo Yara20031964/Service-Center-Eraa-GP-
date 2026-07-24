@@ -35,6 +35,19 @@ namespace KHDMA.Application.DTOs.Catalog
         public int ReviewCount { get; set; }
     }
 
+    /// <summary>A compact provider tile for public browse, search, and map screens.</summary>
+    public class PublicProviderCardDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Photo { get; set; }
+        public string? JobTitle { get; set; }
+        public double Rating { get; set; }
+        public int ReviewCount { get; set; }
+        public decimal? HourlyRate { get; set; }
+        public double? DistanceKm { get; set; }
+    }
+
     /// <summary>Service detail page. Adds the price breakdown the checkout screen needs.</summary>
     public class PublicServiceDetailDto : PublicServiceDto
     {
@@ -42,23 +55,7 @@ namespace KHDMA.Application.DTOs.Catalog
         public decimal VatAmount { get; set; }
         public decimal Total { get; set; }
 
-        /// <summary>
-        /// Backs the three "what's included" bullets.
-        /// </summary>
-        /// <remarks>
-        /// Always empty for now - <c>Service</c> has no inclusions column. Either a
-        /// ServiceInclusion table follows or the UI section is dropped
-        /// (docs/API_CONTRACTS.md open question 3).
-        /// </remarks>
-        public List<ServiceInclusionDto> WhatsIncluded { get; set; } = [];
-
         public int AvailableProvidersCount { get; set; }
-    }
-
-    public class ServiceInclusionDto
-    {
-        public string TextEn { get; set; } = string.Empty;
-        public string TextAr { get; set; } = string.Empty;
     }
 
     /// <summary>A provider's public profile page.</summary>
@@ -96,13 +93,6 @@ namespace KHDMA.Application.DTOs.Catalog
     {
         public Guid Id { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Null: <c>ProviderCertificateImage</c> stores only a url. Add the columns
-        /// or drop the labels (docs/API_CONTRACTS.md open question 2).
-        /// </summary>
-        public string? Name { get; set; }
-        public string? Issuer { get; set; }
     }
 
     public class ProviderReviewDto

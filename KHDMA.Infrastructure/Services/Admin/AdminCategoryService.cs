@@ -1,5 +1,6 @@
 using Domain.Common;
 using KHDMA.Application.DTOs.Catalog;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
 using KHDMA.Infrastructure.Data;
@@ -10,10 +11,12 @@ namespace KHDMA.Infrastructure.Services.Admin;
 public class AdminCategoryService : IAdminCategoryService
 {
     private readonly AppDbContext _context;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public AdminCategoryService(AppDbContext context)
+    public AdminCategoryService(AppDbContext context, IImageUrlResolver imageUrlResolver)
     {
         _context = context;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<PagedResponse<CategoryDto>> GetAllAsync(string? search, bool? isActive, int page, int pageSize)
@@ -30,10 +33,9 @@ public class AdminCategoryService : IAdminCategoryService
         var items = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => MapToDto(c))
             .ToListAsync();
 
-        return PagedResponse<CategoryDto>.Ok(items, total, page, pageSize);
+        return PagedResponse<CategoryDto>.Ok(items.Select(MapToDto), total, page, pageSize);
     }
 
     public async Task<ApiResponse<CategoryDto>> GetByIdAsync(Guid id)
@@ -108,13 +110,13 @@ public class AdminCategoryService : IAdminCategoryService
         return ApiResponse<string>.Ok("Category deleted");
     }
 
-    private static CategoryDto MapToDto(Category c) => new()
+    private CategoryDto MapToDto(Category c) => new()
     {
         Id = c.id,
         NameEn = c.NameEn,
         NameAr = c.NameAr,
         Description = c.Description,
-        IconUrl = c.IconUrl,
+        IconUrl = _imageUrlResolver.Resolve(c.IconUrl),
         IsActive = c.IsActive
     };
 }

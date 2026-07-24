@@ -44,12 +44,18 @@ namespace KHDMA.Infrastructure.Services
         private readonly AppDbContext _db;
         private readonly IPricingService _pricing;
         private readonly IPresenceStore _presence;
+        private readonly IImageUrlResolver _imageUrlResolver;
 
-        public PublicCatalogService(AppDbContext db, IPricingService pricing, IPresenceStore presence)
+        public PublicCatalogService(
+            AppDbContext db,
+            IPricingService pricing,
+            IPresenceStore presence,
+            IImageUrlResolver imageUrlResolver)
         {
             _db = db;
             _pricing = pricing;
             _presence = presence;
+            _imageUrlResolver = imageUrlResolver;
         }
 
         public async Task<ApiResponse<List<PublicCategoryDto>>> GetCategoriesAsync()
@@ -67,6 +73,9 @@ namespace KHDMA.Infrastructure.Services
                     ServiceCount = c.Services.Count(s => s.IsActive),
                 })
                 .ToListAsync();
+
+            foreach (var category in categories)
+                category.IconUrl = _imageUrlResolver.Resolve(category.IconUrl);
 
             return ApiResponse<List<PublicCategoryDto>>.Ok(categories);
         }
@@ -100,6 +109,9 @@ namespace KHDMA.Infrastructure.Services
                 .Select(ServiceProjection)
                 .ToListAsync();
 
+            foreach (var item in items)
+                ResolveServiceImageUrls(item);
+
             return PagedResponse<PublicServiceDto>.Ok(items, total, page, pageSize);
         }
 
@@ -112,6 +124,7 @@ namespace KHDMA.Infrastructure.Services
                 .FirstOrDefaultAsync();
 
             if (basics is null) return ApiResponse<PublicServiceDetailDto>.NotFound("Service not found");
+            ResolveServiceImageUrls(basics);
 
             var providerCount = await _db.ProviderServices
                 .AsNoTracking()
@@ -150,6 +163,111 @@ namespace KHDMA.Infrastructure.Services
             }
 
             return ApiResponse<PublicServiceDetailDto>.Ok(detail);
+        }
+
+        public async Task<PagedResponse<PublicProviderCardDto>> GetProvidersAsync(
+            Guid? category,
+            string? search,
+            double? lat,
+            double? lng,
+            double? radiusKm,
+            int page,
+            int pageSize)
+        {
+            if (page < 1) page = 1;
+            if (pageSize is < 1 or > 50) pageSize = 10;
+
+            var nearby = lat.HasValue && lng.HasValue;
+            var effectiveRadiusKm = radiusKm is > 0 ? radiusKm.Value : 25d;
+
+            var query = _db.Providers
+                .AsNoTracking()
+                .Where(p => p.State == ProviderState.Active && !p.ApplicationUser.IsDeleted);
+
+            if (category.HasValue)
+            {
+                query = query.Where(p => p.ProviderServices.Any(ps =>
+                    ps.IsActive
+                    && ps.Service.IsActive
+                    && ps.Service.CategoryId == category.Value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(p =>
+                    p.ApplicationUser.FullName.Contains(term)
+                    || (p.JobTitle != null && p.JobTitle.Contains(term)));
+            }
+
+            if (nearby)
+            {
+                var latitudeDelta = effectiveRadiusKm / 111.0;
+                var longitudeScale = Math.Max(
+                    0.01,
+                    Math.Abs(Math.Cos(lat!.Value * Math.PI / 180.0)));
+                var longitudeDelta = effectiveRadiusKm / (111.32 * longitudeScale);
+
+                query = query
+                    .Where(p => p.AvailabilityStatus == AvailabilityStatus.Online)
+                    .Where(p => p.CurrentLatitude != null && p.CurrentLongitude != null)
+                    .Where(p => p.CurrentLatitude >= lat.Value - latitudeDelta
+                             && p.CurrentLatitude <= lat.Value + latitudeDelta)
+                    .Where(p => p.CurrentLongitude >= lng!.Value - longitudeDelta
+                             && p.CurrentLongitude <= lng.Value + longitudeDelta);
+            }
+
+            var rows = await query
+                .Select(p => new
+                {
+                    Id = p.ApplicationUserId,
+                    Name = p.ApplicationUser.FullName,
+                    Photo = p.ApplicationUser.ProfilePictureUrl,
+                    p.JobTitle,
+                    p.Rating,
+                    p.ReviewCount,
+                    p.HourlyRate,
+                    p.CurrentLatitude,
+                    p.CurrentLongitude,
+                })
+                .ToListAsync();
+
+            var cards = rows
+                .AsEnumerable()
+                .Select(p => new PublicProviderCardDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Photo = _imageUrlResolver.Resolve(p.Photo),
+                    JobTitle = p.JobTitle,
+                    Rating = p.Rating,
+                    ReviewCount = p.ReviewCount,
+                    HourlyRate = p.HourlyRate,
+                    DistanceKm = nearby
+                        ? Math.Round(DispatchService.Haversine(
+                            lat!.Value,
+                            lng!.Value,
+                            p.CurrentLatitude!.Value,
+                            p.CurrentLongitude!.Value), 2)
+                        : null,
+                });
+
+            cards = nearby
+                ? cards.Where(p => p.DistanceKm <= effectiveRadiusKm)
+                    .OrderBy(p => p.DistanceKm)
+                    .ThenByDescending(p => p.Rating)
+                    .ThenBy(p => p.Name)
+                : cards.OrderByDescending(p => p.Rating)
+                    .ThenBy(p => p.Name);
+
+            var materialized = cards.ToList();
+            var total = materialized.Count;
+            var items = materialized
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return PagedResponse<PublicProviderCardDto>.Ok(items, total, page, pageSize);
         }
 
         public async Task<ApiResponse<ProviderPublicProfileDto>> GetProviderProfileAsync(string providerId)
@@ -223,13 +341,19 @@ namespace KHDMA.Infrastructure.Services
                 return ApiResponse<ProviderPublicProfileDto>.NotFound("Provider not found");
 
             var isConnected = await _presence.IsOnlineAsync(providerId);
+            foreach (var service in provider.Services)
+                ResolveServiceImageUrls(service);
+            foreach (var certificate in provider.Certificates)
+                certificate.ImageUrl = _imageUrlResolver.Resolve(certificate.ImageUrl)!;
+            foreach (var review in provider.Reviews)
+                review.CustomerAvatarUrl = _imageUrlResolver.Resolve(review.CustomerAvatarUrl);
 
             return ApiResponse<ProviderPublicProfileDto>.Ok(new ProviderPublicProfileDto
             {
                 Id = provider.ApplicationUserId,
                 FullName = provider.FullName,
                 JobTitle = provider.JobTitle,
-                AvatarUrl = provider.ProfilePictureUrl,
+                AvatarUrl = _imageUrlResolver.Resolve(provider.ProfilePictureUrl),
                 IsVerified = true,   // only Active providers reach here
                 IsOnline = provider.AvailabilityStatus == AvailabilityStatus.Online && isConnected,
                 // SRS 8: withhold the headline figure until it means something.
@@ -241,10 +365,20 @@ namespace KHDMA.Infrastructure.Services
                 DescriptionAr = provider.Description,
                 ServicesOffered = provider.Services,
                 WorkingAreas = SplitServiceAreas(provider.ServiceArea),
-                PortfolioImages = provider.Portfolio,
+                PortfolioImages = provider.Portfolio
+                    .Select(url => _imageUrlResolver.Resolve(url)!)
+                    .ToList(),
                 Certificates = provider.Certificates,
                 Reviews = provider.Reviews,
             });
+        }
+
+        private void ResolveServiceImageUrls(PublicServiceDto service)
+        {
+            service.ImageUrl = _imageUrlResolver.Resolve(service.ImageUrl);
+            service.ImageUrls = service.ImageUrls
+                .Select(url => _imageUrlResolver.Resolve(url)!)
+                .ToList();
         }
 
         /// <summary>

@@ -17,17 +17,20 @@ namespace KHDMA.Infrastructure.Services
         private readonly IBookingAccessService _access;
         private readonly IChatNotifier _notifier;
         private readonly IPresenceStore _presence;
+        private readonly IImageUrlResolver _imageUrlResolver;
 
         public ChatService(
             AppDbContext db,
             IBookingAccessService access,
             IChatNotifier notifier,
-            IPresenceStore presence)
+            IPresenceStore presence,
+            IImageUrlResolver imageUrlResolver)
         {
             _db = db;
             _access = access;
             _notifier = notifier;
             _presence = presence;
+            _imageUrlResolver = imageUrlResolver;
         }
 
         public async Task<ApiResponse<ChatMessageDto>> SendMessageAsync(Guid bookingId, string senderId, SendMessageDto dto)
@@ -139,7 +142,7 @@ namespace KHDMA.Infrastructure.Services
                     IsMine = m.SenderId == userId,
                     MessageType = m.MessageType,
                     MessageText = m.MessageText,
-                    AttachmentUrl = m.AttachmentUrl,
+                    AttachmentUrl = _imageUrlResolver.Resolve(m.AttachmentUrl),
                     SentAt = m.SentAt,
                     IsRead = m.IsRead,
                 })
@@ -200,7 +203,8 @@ namespace KHDMA.Infrastructure.Services
                     PeerName = viewerIsCustomer ? b.ProviderName : b.CustomerName,
                     PeerRoleEn = viewerIsCustomer ? (b.ProviderJobTitle ?? b.ServiceNameEn) : "Customer",
                     PeerRoleAr = viewerIsCustomer ? b.ServiceNameAr : "عميل",
-                    PeerAvatarUrl = viewerIsCustomer ? b.ProviderAvatar : b.CustomerAvatar,
+                    PeerAvatarUrl = _imageUrlResolver.Resolve(
+                        viewerIsCustomer ? b.ProviderAvatar : b.CustomerAvatar),
                     LastMessage = b.LastMessage?.MessageType == "Image" ? "📷 Photo" : b.LastMessage?.MessageText,
                     LastMessageAt = b.LastMessage?.SentAt,
                     UnreadCount = b.UnreadCount,
@@ -262,10 +266,13 @@ namespace KHDMA.Infrastructure.Services
                 })
                 .ToListAsync();
 
+            foreach (var row in rows)
+                row.AttachmentUrl = _imageUrlResolver.Resolve(row.AttachmentUrl);
+
             return ApiResponse<List<ChatTranscriptDto>>.Ok(rows);
         }
 
-        private static ChatMessageDto Map(ChatMessage m, string? senderName, bool isMine) => new()
+        private ChatMessageDto Map(ChatMessage m, string? senderName, bool isMine) => new()
         {
             Id = m.Id,
             BookingId = m.BookingId,
@@ -274,7 +281,7 @@ namespace KHDMA.Infrastructure.Services
             IsMine = isMine,
             MessageType = m.MessageType,
             MessageText = m.MessageText,
-            AttachmentUrl = m.AttachmentUrl,
+            AttachmentUrl = _imageUrlResolver.Resolve(m.AttachmentUrl),
             SentAt = m.SentAt,
             IsRead = m.IsRead,
         };

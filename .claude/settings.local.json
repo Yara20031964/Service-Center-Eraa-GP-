@@ -28,7 +28,25 @@
       "Bash(dotnet test *)",
       "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(json.dumps\\({k:\\(v if not isinstance\\(v,str\\) or len\\(v\\)<60 else v[:40]+'...'\\) for k,v in d.items\\(\\)},indent=1,default=str\\)\\)\")",
       "Bash(python audit.py)",
-      "Bash(python -c \"import json;print\\(json.load\\(open\\('tokens.json'\\)\\)['provider']\\)\")"
+      "Bash(python -c \"import json;print\\(json.load\\(open\\('tokens.json'\\)\\)['provider']\\)\")",
+      "Bash(timeout 6 bash -c 'exec 3<>/dev/tcp/db60819.public.databaseasp.net/1433 && echo \"PORT 1433 OPEN\" || echo \"unreachable\"')",
+      "Bash(codex --version)",
+      "Bash(codex login *)",
+      "Bash(codex exec *)",
+      "Bash(grep -iA3 \"model\")",
+      "Bash(node \".claude/skills/codex-delegate/scripts/relay.mjs\" --brief \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/brief_endpoints.txt\" --cd \"D:/Eraa Soft Back-end/GP/Service-Center-Eraa-GP-\" --out-dir \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/codex_run1\")",
+      "Bash(python -c \"import json;d=json.load\\(open\\('scratchpad/codex_run1/result.json'\\)\\);print\\('status:',d.get\\('status'\\),'exit:',d.get\\('exitCode'\\),'version:',d.get\\('codexVersion'\\)\\)\")",
+      "Bash(node \".claude/skills/codex-delegate/scripts/relay.mjs\" --brief \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/brief_delta1.txt\" --cd \"D:/Eraa Soft Back-end/GP/Service-Center-Eraa-GP-\" --resume-last --out-dir \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/codex_run1b\")",
+      "Bash(node \".claude/skills/codex-delegate/scripts/relay.mjs\" --brief \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/brief_smallfixes.txt\" --cd \"D:/Eraa Soft Back-end/GP/Service-Center-Eraa-GP-\" --out-dir \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/codex_run2\")",
+      "Bash(break)",
+      "Bash(node \".claude/skills/codex-delegate/scripts/relay.mjs\" --brief \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/brief_payments.txt\" --cd \"D:/Eraa Soft Back-end/GP/Service-Center-Eraa-GP-\" --out-dir \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/codex_run3\")",
+      "Bash(grep -oE \"public [A-Za-z0-9_<>?\\\\[\\\\],. ]+ [A-Za-z0-9_]+ \\\\{\")",
+      "Bash(sed 's/public //;s/ {//')",
+      "Bash(sed -n '/class PendingJobDto/,/^    }/p' KHDMA.Application/DTOs/Provider/ProviderJobDtos.cs)",
+      "Bash(sed -n '/class ProviderAvailabilityDto/,/^    }/p' KHDMA.Application/DTOs/Provider/ProviderJobDtos.cs)",
+      "Bash(sed -n '/class TokenResponseDto/,/^    }/p' KHDMA.Application/DTOs/Auth/Response/TokenResponseDto.cs)",
+      "Bash(node \".claude/skills/codex-delegate/scripts/relay.mjs\" --brief \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/brief_producestypes.txt\" --cd \"D:/Eraa Soft Back-end/GP/Service-Center-Eraa-GP-\" --out-dir \"C:/Users/Lenovo/AppData/Local/Temp/claude/D--Eraa-Soft-Back-end-GP-Service-Center-Eraa-GP-/cb9a931b-e56c-4036-aeea-925259943142/scratchpad/codex_run4\")",
+      "Bash(read n *)"
     ]
   }
 }

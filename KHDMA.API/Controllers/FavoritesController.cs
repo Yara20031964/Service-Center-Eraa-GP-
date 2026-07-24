@@ -23,6 +23,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{providerId}")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Toggle(string providerId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -40,6 +42,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType<ApiResponse<List<ProviderDto>>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<List<ProviderDto>>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Get()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Admin;
 using Domain.Common;
 using KHDMA.Application.Interfaces.Repositories;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
@@ -10,10 +11,12 @@ namespace Application.Services.Admin;
 public class AdminCustomerService : IAdminCustomerService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public AdminCustomerService(IUnitOfWork unitOfWork)
+    public AdminCustomerService(IUnitOfWork unitOfWork, IImageUrlResolver imageUrlResolver)
     {
         _unitOfWork = unitOfWork;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<PagedResponse<CustomerDto>> GetAllCustomersAsync(
@@ -39,7 +42,7 @@ public class AdminCustomerService : IAdminCustomerService
                 FullName = u.FullName,
                 Email = u.Email,
                 Phone = u.PhoneNumber,
-                ProfilePhotoUrl = u.ProfilePictureUrl,
+                ProfilePhotoUrl = _imageUrlResolver.Resolve(u.ProfilePictureUrl),
                 Status = u.Status,
                 CreatedAt = u.CreateAt,
                 IsDeleted = u.IsDeleted
@@ -64,7 +67,7 @@ public class AdminCustomerService : IAdminCustomerService
             FullName = user.FullName,
             Email = user.Email,
             Phone = user.PhoneNumber,
-            ProfilePhotoUrl = user.ProfilePictureUrl,
+            ProfilePhotoUrl = _imageUrlResolver.Resolve(user.ProfilePictureUrl),
             Status = user.Status,
             CreatedAt = user.CreateAt,
             IsDeleted = user.IsDeleted

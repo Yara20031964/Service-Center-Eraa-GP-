@@ -1,3 +1,4 @@
+using Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -54,10 +55,24 @@ public sealed class RoleSecurityOperationFilter : IOperationFilter
             }
         };
 
-        operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Missing or invalid token" });
+        var apiResponseSchema = context.SchemaGenerator.GenerateSchema(
+            typeof(ApiResponse<object>), context.SchemaRepository);
+
+        operation.Responses.TryAdd("401", JsonResponse(
+            "Missing or invalid token", apiResponseSchema));
         if (scheme != Common)
-            operation.Responses.TryAdd("403", new OpenApiResponse { Description = "Token belongs to a different role" });
+            operation.Responses.TryAdd("403", JsonResponse(
+                "Token belongs to a different role", apiResponseSchema));
     }
+
+    private static OpenApiResponse JsonResponse(string description, OpenApiSchema schema) => new()
+    {
+        Description = description,
+        Content = new Dictionary<string, OpenApiMediaType>
+        {
+            ["application/json"] = new() { Schema = schema },
+        },
+    };
 
     // The tag already encodes the audience, so the section a route was filed under
     // is also the answer to which token it needs - no second mapping to maintain.

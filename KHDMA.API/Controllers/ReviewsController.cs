@@ -25,6 +25,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType<ApiResponse<Guid>>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ApiResponse<Guid>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -46,6 +48,9 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReviewDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -68,6 +73,9 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("{id}/reply")]
         [Tags(ApiTags.ProviderReviews)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Reply(Guid id, [FromBody] string reply)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -87,6 +95,7 @@ namespace KHDMA.API.Controllers
         [HttpGet("provider/{providerId}")]
         [AllowAnonymous]
         [Tags(ApiTags.PublicCatalog)]
+        [ProducesResponseType<PagedResponse<ReviewDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByProvider(string providerId, [FromQuery] int page = 1)
         {
             var query = new GetProviderReviewsQuery

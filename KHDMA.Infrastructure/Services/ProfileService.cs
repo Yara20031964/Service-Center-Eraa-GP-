@@ -16,12 +16,18 @@ public class ProfileService : IProfileService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
     private readonly IWebHostEnvironment _env;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public ProfileService(UserManager<ApplicationUser> userManager, AppDbContext context, IWebHostEnvironment env)
+    public ProfileService(
+        UserManager<ApplicationUser> userManager,
+        AppDbContext context,
+        IWebHostEnvironment env,
+        IImageUrlResolver imageUrlResolver)
     {
         _userManager = userManager;
         _context = context;
         _env = env;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<ApiResponse<object>> GetProfileAsync(string userId)
@@ -163,7 +169,7 @@ public class ProfileService : IProfileService
             .Select(i => i.ImageUrl)
             .ToListAsync();
 
-        return ApiResponse<List<string>>.Ok(urls);
+        return ApiResponse<List<string>>.Ok(urls.Select(url => _imageUrlResolver.Resolve(url)!).ToList());
     }
 
     public async Task<ApiResponse<List<string>>> AddCertificateImagesAsync(string userId, List<IFormFile> images)
@@ -173,10 +179,10 @@ public class ProfileService : IProfileService
         {
             var url = await SaveFileAsync(file, "certificates");
             _context.ProviderCertificateImages.Add(new ProviderCertificateImage { ProviderId = userId, ImageUrl = url });
-            urls.Add(url);
+            urls.Add(_imageUrlResolver.Resolve(url)!);
         }
         await _context.SaveChangesAsync();
-        return ApiResponse<List<string>>.Ok(urls);
+        return ApiResponse<List<string>>.Ok(urls.Select(url => _imageUrlResolver.Resolve(url)!).ToList());
     }
 
     public async Task<ApiResponse<string>> DeleteCertificateImageAsync(string userId, Guid imageId)
@@ -208,7 +214,7 @@ public class ProfileService : IProfileService
         {
             var url = await SaveFileAsync(file, "portfolio");
             _context.ProviderPortfolioImages.Add(new ProviderPortfolioImage { ProviderId = userId, ImageUrl = url });
-            urls.Add(url);
+            urls.Add(_imageUrlResolver.Resolve(url)!);
         }
         await _context.SaveChangesAsync();
         return ApiResponse<List<string>>.Ok(urls);
@@ -237,25 +243,25 @@ public class ProfileService : IProfileService
         return $"/uploads/{folder}/{fileName}";
     }
 
-    private static T MapBaseProfile<T>(ApplicationUser user) where T : BaseProfileDto, new() => new()
+    private T MapBaseProfile<T>(ApplicationUser user) where T : BaseProfileDto, new() => new()
     {
         Id = user.Id,
         FullName = user.FullName,
         Email = user.Email ?? string.Empty,
         PhoneNumber = user.PhoneNumber,
-        ProfilePictureUrl = user.ProfilePictureUrl,
+        ProfilePictureUrl = _imageUrlResolver.Resolve(user.ProfilePictureUrl),
         DateOfBirth = user.DateOfBirth,
         Role = user.Role.ToString(),
         EmailConfirmed = user.EmailConfirmed
     };
 
-    private static ProviderProfileDto MapProviderProfile(ApplicationUser user, Provider? provider) => new()
+    private ProviderProfileDto MapProviderProfile(ApplicationUser user, Provider? provider) => new()
     {
         Id = user.Id,
         FullName = user.FullName,
         Email = user.Email ?? string.Empty,
         PhoneNumber = user.PhoneNumber,
-        ProfilePictureUrl = user.ProfilePictureUrl,
+        ProfilePictureUrl = _imageUrlResolver.Resolve(user.ProfilePictureUrl),
         DateOfBirth = user.DateOfBirth,
         Role = user.Role.ToString(),
         EmailConfirmed = user.EmailConfirmed,

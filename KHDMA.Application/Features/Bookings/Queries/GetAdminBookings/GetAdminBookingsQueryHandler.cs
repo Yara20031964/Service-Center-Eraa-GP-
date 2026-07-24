@@ -54,11 +54,17 @@ namespace KHDMA.Application.Features.Bookings.Queries.GetAdminBookings
                 .OrderByDescending(b => b.CreateAt)
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
+                // Already materialised by GetAsync above, but be explicit: the
+                // projection runs in memory, so the null-conditional below is what
+                // keeps a provider-less booking (Pending/Dispatching) from throwing.
+                .AsEnumerable()
                 .Select(b => new BookingListDto
                 {
                     Id = b.Id,
                     ServiceName = b.Service.NameEn,
-                    ProviderName = b.Provider.ApplicationUser.FullName,
+                    // Null until a provider accepts - an admin list includes bookings
+                    // still being dispatched, which have no provider yet.
+                    ProviderName = b.Provider?.ApplicationUser?.FullName,
                     Status = b.Status,
                     ScheduledTime = b.ScheduledTime,
                     TotalPrice = b.TotalPrice,
