@@ -16,6 +16,13 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: KHDMA.Web/package-lock.json
+
       - name: Install dependencies
         run: dotnet restore ./KHDMA.API/KHDMA.API.csproj
 
@@ -24,6 +31,21 @@ jobs:
 
       - name: Publish
         run: dotnet publish ./KHDMA.API/KHDMA.API.csproj --configuration Release --output ./publish
+
+      # The admin SPA is served same-origin from the API's wwwroot (all its calls
+      # are relative /api paths), so build it and drop the static bundle into the
+      # publish output before WebDeploy ships the folder.
+      - name: Build frontend
+        working-directory: KHDMA.Web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy frontend into publish/wwwroot
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ./publish/wwwroot | Out-Null
+          Copy-Item -Path ./KHDMA.Web/dist/* -Destination ./publish/wwwroot -Recurse -Force
 
       - name: Deploy to MonsterASP.NET via WebDeploy
         uses: rasmusbuchholdt/simply-web-deploy@2.1.0

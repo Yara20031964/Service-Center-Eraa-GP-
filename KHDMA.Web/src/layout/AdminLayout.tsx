@@ -4,7 +4,6 @@ import Avatar from '../components/Avatar'
 import {
   CalendarIcon,
   CardIcon,
-  GearIcon,
   GridIcon,
   LogoMark,
   LogoutIcon,
@@ -15,17 +14,23 @@ import {
 } from '../components/icons'
 import './AdminLayout.css'
 
-export type PageId = 'dashboard' | 'customers' | 'providers' | 'catalog' | 'payments'
+export type PageId =
+  | 'dashboard'
+  | 'customers'
+  | 'providers'
+  | 'catalog'
+  | 'payments'
+  | 'reviews'
+  | 'bookings'
 
 const NAV: { icon: ReactNode; label: string; page?: PageId }[] = [
   { icon: <GridIcon size={19} />, label: 'Dashboard', page: 'dashboard' },
   { icon: <UsersIcon size={19} />, label: 'Customers', page: 'customers' },
   { icon: <ProvidersIcon size={19} />, label: 'Providers', page: 'providers' },
   { icon: <WrenchIcon size={19} />, label: 'Catalog', page: 'catalog' },
-  { icon: <CalendarIcon size={19} />, label: 'Bookings' },
+  { icon: <CalendarIcon size={19} />, label: 'Bookings', page: 'bookings' },
   { icon: <CardIcon size={19} />, label: 'Payments', page: 'payments' },
-  { icon: <StarIcon size={19} />, label: 'Reviews' },
-  { icon: <GearIcon size={19} />, label: 'Settings' },
+  { icon: <StarIcon size={19} />, label: 'Reviews', page: 'reviews' },
 ]
 
 const COLLAPSE_KEY = 'khdma.sidebar.collapsed'
@@ -107,6 +112,19 @@ export default function AdminLayout({
             )
           })}
         </nav>
+
+        <button
+          type="button"
+          className="side__logout"
+          onClick={onLogout}
+          title={collapsed ? 'Sign out' : undefined}
+          aria-label="Sign out"
+        >
+          <span className="nav-item__icon">
+            <LogoutIcon size={19} />
+          </span>
+          {!collapsed && <span className="nav-item__label">Sign out</span>}
+        </button>
       </aside>
 
       {/* ---------- Main column ---------- */}
@@ -119,15 +137,6 @@ export default function AdminLayout({
                 <span className="user__role">{session.role}</span>
               </div>
               <Avatar name={session.userName} />
-              <button
-                type="button"
-                className="iconbtn"
-                onClick={onLogout}
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogoutIcon size={19} />
-              </button>
             </div>
           </div>
         </header>
