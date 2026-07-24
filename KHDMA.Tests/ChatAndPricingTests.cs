@@ -284,7 +284,13 @@ public class CancellationPolicyTests
         var policy = new CancellationPolicyService(db);
 
         foreach (var status in new[] { BookingStatus.Pending, BookingStatus.Dispatching })
-            Assert.True(await policy.Evaluate(new Booking { Status = status, CreateAt = DateTime.UtcNow }));
+        {
+            var decision = await policy.Evaluate(
+                new Booking { Status = status, CreateAt = DateTime.UtcNow });
+
+            Assert.True(decision.Allowed);
+            Assert.Equal(0m, decision.Fee);
+        }
     }
 
     [Fact]
@@ -300,7 +306,10 @@ public class CancellationPolicyTests
             AcceptedAt = DateTime.UtcNow.AddMinutes(-5),   // default window is 10 min
         };
 
-        Assert.True(await policy.Evaluate(booking));
+        var decision = await policy.Evaluate(booking);
+
+        Assert.True(decision.Allowed);
+        Assert.Equal(0m, decision.Fee);
     }
 
     [Fact]
@@ -317,7 +326,12 @@ public class CancellationPolicyTests
             ArrivedAt = DateTime.UtcNow.AddMinutes(-2),
         };
 
-        Assert.False(await policy.Evaluate(booking));
+        var decision = await policy.Evaluate(booking);
+
+        // A late cancellation is charged, not refused: the customer can always
+        // call the job off, they simply pay the flat fee for doing it late.
+        Assert.True(decision.Allowed);
+        Assert.Equal(new CancellationPolicy().CancellationFee, decision.Fee);
     }
 
     [Fact]
@@ -334,7 +348,10 @@ public class CancellationPolicyTests
             EnRouteAt = DateTime.UtcNow.AddMinutes(-45),   // 45 min en route, 15 min grace
         };
 
-        Assert.True(await policy.Evaluate(booking));
+        var decision = await policy.Evaluate(booking);
+
+        Assert.True(decision.Allowed);
+        Assert.Equal(0m, decision.Fee);
     }
 
     [Fact]
@@ -344,8 +361,14 @@ public class CancellationPolicyTests
         await using var db = harness.NewContext();
         var policy = new CancellationPolicyService(db);
 
-        Assert.False(await policy.Evaluate(new Booking { Status = BookingStatus.Completed }));
-        Assert.False(await policy.Evaluate(new Booking { Status = BookingStatus.Cancelled }));
+        // The only genuine refusal: there is nothing left to call off.
+        foreach (var status in new[] { BookingStatus.Completed, BookingStatus.Cancelled })
+        {
+            var decision = await policy.Evaluate(new Booking { Status = status });
+
+            Assert.False(decision.Allowed);
+            Assert.False(string.IsNullOrWhiteSpace(decision.Reason));
+        }
     }
 }
 

@@ -1,9 +1,11 @@
 using System.Text.Json;
+using KHDMA.Application.Common;
 using KHDMA.Application.DTOs.Provider;
 using KHDMA.Domain.Enums;
 using KHDMA.Infrastructure.RealTime;
 using KHDMA.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace KHDMA.Tests;
 
@@ -17,7 +19,7 @@ public class BookingDetailsServiceTests
         var bookingId = harness.SeedBooking(world);
 
         await using var db = harness.NewContext();
-        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver())
+        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver(), Options.Create(new VatSettings()))
             .GetAsync(bookingId, world.CustomerId);
 
         Assert.True(result.Success);
@@ -29,6 +31,12 @@ public class BookingDetailsServiceTests
         Assert.Null(result.Data.ProviderPhone);
         Assert.Null(result.Data.ProviderRating);
         Assert.Null(result.Data.ProviderPhoto);
+
+        // The payout split is not the customer's to see, even though the Payment
+        // row backing it is loaded for this booking.
+        Assert.Null(result.Data.CustomerPhone);
+        Assert.Null(result.Data.ProviderEarning);
+        Assert.Null(result.Data.Currency);
     }
 
     [Fact]
@@ -39,7 +47,7 @@ public class BookingDetailsServiceTests
         var bookingId = harness.SeedBooking(world);
 
         await using var db = harness.NewContext();
-        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver())
+        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver(), Options.Create(new VatSettings()))
             .GetAsync(bookingId, "not-a-participant");
 
         Assert.False(result.Success);
@@ -65,7 +73,7 @@ public class BookingDetailsServiceTests
         }
 
         await using var db = harness.NewContext();
-        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver())
+        var result = await new BookingDetailsService(db, new PassthroughImageUrlResolver(), Options.Create(new VatSettings()))
             .GetAsync(bookingId, providerId);
 
         Assert.True(result.Success);
@@ -73,6 +81,11 @@ public class BookingDetailsServiceTests
         Assert.Equal("Provider 0", result.Data.ProviderName);
         Assert.Equal("+201000000000", result.Data.ProviderPhone);
         Assert.NotNull(result.Data.AcceptedAt);
+
+        // Everything the app needs to rebuild an in-flight job after a restart.
+        Assert.Equal("+201000000000", result.Data.CustomerPhone);
+        Assert.Equal(212.50m, result.Data.ProviderEarning);
+        Assert.Equal("EGP", result.Data.Currency);
     }
 }
 
@@ -129,8 +142,8 @@ public class ProviderJobsServiceTests
         });
 
         Assert.Equal(AvailabilityStatus.Offline, partial.Data!.Status);
-        Assert.Equal(original.CurrentLatitude, partial.Data.Latitude);
-        Assert.Equal(original.CurrentLongitude, partial.Data.Longitude);
+        Assert.Equal(original.WorkingLatitude, partial.Data.Latitude);
+        Assert.Equal(original.WorkingLongitude, partial.Data.Longitude);
 
         var complete = await service.UpdateAvailabilityAsync(providerId, new UpdateAvailabilityDto
         {
@@ -156,8 +169,8 @@ public class ProviderJobsServiceTests
             await setup.Providers
                 .Where(p => p.ApplicationUserId == providerId)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(p => p.CurrentLatitude, (double?)null)
-                    .SetProperty(p => p.CurrentLongitude, (double?)null));
+                    .SetProperty(p => p.WorkingLatitude, (double?)null)
+                    .SetProperty(p => p.WorkingLongitude, (double?)null));
         }
 
         await using var db = harness.NewContext();
@@ -221,8 +234,8 @@ public class PublicProviderListingTests
             await setup.Providers
                 .Where(p => p.ApplicationUserId == world.ProviderIds[2])
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(p => p.CurrentLatitude, 31.2001)
-                    .SetProperty(p => p.CurrentLongitude, 29.9187));
+                    .SetProperty(p => p.WorkingLatitude, 31.2001)
+                    .SetProperty(p => p.WorkingLongitude, 29.9187));
             await setup.Providers
                 .Where(p => p.ApplicationUserId == world.ProviderIds[1])
                 .ExecuteUpdateAsync(s => s.SetProperty(

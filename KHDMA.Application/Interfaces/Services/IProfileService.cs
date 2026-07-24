@@ -12,10 +12,10 @@ public interface IProfileService
     Task<ApiResponse<List<AddressDto>>> GetAddressesAsync(string userId);
     Task<ApiResponse<AddressDto>> AddAddressAsync(string userId, CreateAddressDto dto);
     Task<ApiResponse<string>> DeleteAddressAsync(string userId, Guid addressId);
-    Task<ApiResponse<List<string>>> GetCertificateImagesAsync(string userId);
-    Task<ApiResponse<List<string>>> AddCertificateImagesAsync(string userId, List<IFormFile> images);
+    Task<ApiResponse<List<ProfileImageDto>>> GetCertificateImagesAsync(string userId);
+    Task<ApiResponse<List<ProfileImageDto>>> AddCertificateImagesAsync(string userId, List<IFormFile> images);
     Task<ApiResponse<string>> DeleteCertificateImageAsync(string userId, Guid imageId);
-    Task<ApiResponse<List<string>>> GetPortfolioImagesAsync(string userId);
-    Task<ApiResponse<List<string>>> AddPortfolioImagesAsync(string userId, List<IFormFile> images);
+    Task<ApiResponse<List<ProfileImageDto>>> GetPortfolioImagesAsync(string userId);
+    Task<ApiResponse<List<ProfileImageDto>>> AddPortfolioImagesAsync(string userId, List<IFormFile> images);
     Task<ApiResponse<string>> DeletePortfolioImageAsync(string userId, Guid imageId);
 }

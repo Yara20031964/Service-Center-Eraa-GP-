@@ -28,6 +28,12 @@ public class ProviderProfileDto : BaseProfileDto
     public int NumberOfJobsDone { get; set; }
     public string State { get; set; } = string.Empty;
     public string AvailabilityStatus { get; set; } = string.Empty;
+
+    /// <summary>The point dispatch matches this provider against.</summary>
+    public double? WorkingLatitude { get; set; }
+    public double? WorkingLongitude { get; set; }
+
+    /// <summary>Last live position, which moves while a job is en route.</summary>
     public double? CurrentLatitude { get; set; }
     public double? CurrentLongitude { get; set; }
 }
@@ -47,6 +53,11 @@ public class UpdateProfileDto
     public int? ExperienceYears { get; set; }
     public string? Description { get; set; }
     public string? AvailabilityStatus { get; set; }
+
+    /// <summary>
+    /// Moves the working point. Keeps the wire name the client already sends; it
+    /// has never meant "where I am standing", only "where I work".
+    /// </summary>
     public double? CurrentLatitude { get; set; }
     public double? CurrentLongitude { get; set; }
 }

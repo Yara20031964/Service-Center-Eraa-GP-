@@ -26,11 +26,20 @@ namespace KHDMA.Infrastructure.Services
 
         public CancellationPolicyService(AppDbContext db) => _db = db;
 
-        /// <summary>True when the customer may cancel free of charge.</summary>
-        public async Task<bool> Evaluate(Booking booking)
+        /// <summary>
+        /// Decides whether this booking may be cancelled, and at what cost. The
+        /// customer may cancel at any point up until the job is over; what changes
+        /// with time is the fee, not the permission.
+        /// </summary>
+        public async Task<CancellationDecision> Evaluate(Booking booking)
         {
             var policy = await _db.CancellationPolicies.AsNoTracking().FirstOrDefaultAsync()
                          ?? new CancellationPolicy();   // seeded defaults: 10 min, 20 EGP
+
+            // Already finished - there is nothing left to cancel. This is the only
+            // genuine refusal.
+            if (booking.Status is BookingStatus.Completed or BookingStatus.Cancelled)
+                return CancellationDecision.Refuse("This booking is already closed.");
 
             // Nobody has committed any time yet.
             if (booking.Status is BookingStatus.Pending
@@ -38,12 +47,8 @@ namespace KHDMA.Infrastructure.Services
                 or BookingStatus.NoProviderFound
                 or BookingStatus.Failed)
             {
-                return true;
+                return CancellationDecision.Free();
             }
-
-            // Already finished - nothing to cancel.
-            if (booking.Status is BookingStatus.Completed or BookingStatus.Cancelled)
-                return false;
 
             var now = DateTime.UtcNow;
 
@@ -51,13 +56,13 @@ namespace KHDMA.Infrastructure.Services
             // should not tick while the customer is still waiting for a provider.
             var acceptedAt = booking.AcceptedAt ?? booking.CreateAt;
             if (now - acceptedAt <= TimeSpan.FromMinutes(policy.FreeCancelWindowMinutes))
-                return true;
+                return CancellationDecision.Free();
 
             // The provider is significantly late - the customer should not pay for that.
             if (booking.Status == BookingStatus.EnRoute && booking.EnRouteAt is not null
                 && now - booking.EnRouteAt.Value > ProviderLateGrace)
             {
-                return true;
+                return CancellationDecision.Free();
             }
 
             // A scheduled slot has come and gone with nobody on site.
@@ -65,11 +70,12 @@ namespace KHDMA.Infrastructure.Services
                 && booking.Status is BookingStatus.Accepted or BookingStatus.EnRoute
                 && now > booking.ScheduledTime.Value.Add(ProviderLateGrace))
             {
-                return true;
+                return CancellationDecision.Free();
             }
 
-            // Provider has arrived or is working: the flat CancellationFee applies.
-            return false;
+            // The provider has committed real time by now: the flat fee applies,
+            // but the cancellation still goes through.
+            return CancellationDecision.Chargeable(policy.CancellationFee);
         }
     }
 }

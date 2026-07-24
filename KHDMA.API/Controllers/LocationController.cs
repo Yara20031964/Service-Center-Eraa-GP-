@@ -72,5 +72,28 @@ namespace KHDMA.API.Controllers
             var result = await _location.GetEtaAsync(id, userId);
             return StatusCode(result.StatusCode, result);
         }
+
+        /// <summary>
+        /// The drive from the provider's position to the booking address, as an
+        /// encoded polyline plus distance and ETA, for drawing on a map.
+        /// </summary>
+        /// <remarks>
+        /// <c>polyline</c> is null when Directions is unavailable; draw a straight
+        /// line between the two returned points rather than blanking the map.
+        /// </remarks>
+        [HttpGet("{id:guid}/route")]
+        [ProducesResponseType<ApiResponse<RouteDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<RouteDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<RouteDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<RouteDto>>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ApiResponse<RouteDto>>(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> GetRoute(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null) return Unauthorized(ApiResponse<RouteDto>.Unauthorized());
+
+            var result = await _location.GetRouteAsync(id, userId);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

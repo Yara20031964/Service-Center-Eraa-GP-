@@ -25,6 +25,18 @@ namespace KHDMA.Application.Common
 
         /// <summary>Cap on how many providers one round notifies, nearest first.</summary>
         public int MaxProvidersPerRound { get; set; } = 20;
+
+        /// <summary>
+        /// How old a provider's position may be and still be dispatchable.
+        /// </summary>
+        /// <remarks>
+        /// An idle Online provider refreshes only on the app's heartbeat, so this
+        /// must stay comfortably above that interval or genuinely available
+        /// providers get filtered out. Rows written before this column existed have
+        /// a null timestamp and are treated as fresh, so enabling the filter cannot
+        /// silently empty the candidate pool on deploy.
+        /// </remarks>
+        public int MaxLocationAgeMinutes { get; set; } = 30;
     }
 
     /// <summary>Bound from the <c>Vat</c> section.</summary>

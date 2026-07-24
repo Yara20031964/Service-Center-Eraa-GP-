@@ -81,8 +81,12 @@ public class ProfileService : IProfileService
                 if (dto.JobTitle != null) provider.JobTitle = dto.JobTitle;
                 if (dto.ExperienceYears.HasValue) provider.ExperienceYears = dto.ExperienceYears.Value;
                 if (dto.Description != null) provider.Description = dto.Description;
-                if (dto.CurrentLatitude.HasValue) provider.CurrentLatitude = dto.CurrentLatitude.Value;
-                if (dto.CurrentLongitude.HasValue) provider.CurrentLongitude = dto.CurrentLongitude.Value;
+                // Editing the profile moves where the provider works, not where they
+                // currently are - that is live tracking's column.
+                if (dto.CurrentLatitude.HasValue) provider.WorkingLatitude = dto.CurrentLatitude.Value;
+                if (dto.CurrentLongitude.HasValue) provider.WorkingLongitude = dto.CurrentLongitude.Value;
+                if (dto.CurrentLatitude.HasValue || dto.CurrentLongitude.HasValue)
+                    provider.LocationUpdatedAt = DateTime.UtcNow;
 
                 if (dto.AvailabilityStatus != null &&
                     Enum.TryParse<AvailabilityStatus>(dto.AvailabilityStatus, true, out var status))
@@ -162,27 +166,45 @@ public class ProfileService : IProfileService
         return ApiResponse<string>.Ok("Address deleted");
     }
 
-    public async Task<ApiResponse<List<string>>> GetCertificateImagesAsync(string userId)
+    public async Task<ApiResponse<List<ProfileImageDto>>> GetCertificateImagesAsync(string userId)
     {
-        var urls = await _context.ProviderCertificateImages
+        var images = await _context.ProviderCertificateImages
             .Where(i => i.ProviderId == userId)
-            .Select(i => i.ImageUrl)
+            .Select(i => new { i.Id, i.ImageUrl })
             .ToListAsync();
 
-        return ApiResponse<List<string>>.Ok(urls.Select(url => _imageUrlResolver.Resolve(url)!).ToList());
+        return ApiResponse<List<ProfileImageDto>>.Ok(images
+            .Select(i => new ProfileImageDto
+            {
+                Id = i.Id,
+                ImageUrl = _imageUrlResolver.Resolve(i.ImageUrl)!,
+            })
+            .ToList());
     }
 
-    public async Task<ApiResponse<List<string>>> AddCertificateImagesAsync(string userId, List<IFormFile> images)
+    public async Task<ApiResponse<List<ProfileImageDto>>> AddCertificateImagesAsync(string userId, List<IFormFile> images)
     {
-        var urls = new List<string>();
+        var saved = new List<ProviderCertificateImage>();
         foreach (var file in images)
         {
-            var url = await SaveFileAsync(file, "certificates");
-            _context.ProviderCertificateImages.Add(new ProviderCertificateImage { ProviderId = userId, ImageUrl = url });
-            urls.Add(_imageUrlResolver.Resolve(url)!);
+            var entity = new ProviderCertificateImage
+            {
+                ProviderId = userId,
+                ImageUrl = await SaveFileAsync(file, "certificates"),
+            };
+            _context.ProviderCertificateImages.Add(entity);
+            saved.Add(entity);
         }
+        // Saved before mapping so the generated ids are populated - returning
+        // them is what lets the client delete an image it just uploaded.
         await _context.SaveChangesAsync();
-        return ApiResponse<List<string>>.Ok(urls.Select(url => _imageUrlResolver.Resolve(url)!).ToList());
+        return ApiResponse<List<ProfileImageDto>>.Ok(saved
+            .Select(i => new ProfileImageDto
+            {
+                Id = i.Id,
+                ImageUrl = _imageUrlResolver.Resolve(i.ImageUrl)!,
+            })
+            .ToList());
     }
 
     public async Task<ApiResponse<string>> DeleteCertificateImageAsync(string userId, Guid imageId)
@@ -197,27 +219,45 @@ public class ProfileService : IProfileService
         return ApiResponse<string>.Ok("Image deleted");
     }
 
-    public async Task<ApiResponse<List<string>>> GetPortfolioImagesAsync(string userId)
+    public async Task<ApiResponse<List<ProfileImageDto>>> GetPortfolioImagesAsync(string userId)
     {
-        var urls = await _context.ProviderPortfolioImages
+        var images = await _context.ProviderPortfolioImages
             .Where(i => i.ProviderId == userId)
-            .Select(i => i.ImageUrl)
+            .Select(i => new { i.Id, i.ImageUrl })
             .ToListAsync();
 
-        return ApiResponse<List<string>>.Ok(urls);
+        // Resolved to an absolute URL like the certificate list; portfolio was
+        // returning the stored relative path, which no client could load.
+        return ApiResponse<List<ProfileImageDto>>.Ok(images
+            .Select(i => new ProfileImageDto
+            {
+                Id = i.Id,
+                ImageUrl = _imageUrlResolver.Resolve(i.ImageUrl)!,
+            })
+            .ToList());
     }
 
-    public async Task<ApiResponse<List<string>>> AddPortfolioImagesAsync(string userId, List<IFormFile> images)
+    public async Task<ApiResponse<List<ProfileImageDto>>> AddPortfolioImagesAsync(string userId, List<IFormFile> images)
     {
-        var urls = new List<string>();
+        var saved = new List<ProviderPortfolioImage>();
         foreach (var file in images)
         {
-            var url = await SaveFileAsync(file, "portfolio");
-            _context.ProviderPortfolioImages.Add(new ProviderPortfolioImage { ProviderId = userId, ImageUrl = url });
-            urls.Add(_imageUrlResolver.Resolve(url)!);
+            var entity = new ProviderPortfolioImage
+            {
+                ProviderId = userId,
+                ImageUrl = await SaveFileAsync(file, "portfolio"),
+            };
+            _context.ProviderPortfolioImages.Add(entity);
+            saved.Add(entity);
         }
         await _context.SaveChangesAsync();
-        return ApiResponse<List<string>>.Ok(urls);
+        return ApiResponse<List<ProfileImageDto>>.Ok(saved
+            .Select(i => new ProfileImageDto
+            {
+                Id = i.Id,
+                ImageUrl = _imageUrlResolver.Resolve(i.ImageUrl)!,
+            })
+            .ToList());
     }
 
     public async Task<ApiResponse<string>> DeletePortfolioImageAsync(string userId, Guid imageId)
@@ -279,6 +319,8 @@ public class ProfileService : IProfileService
         NumberOfJobsDone = provider?.NumberOfJobsDone ?? 0,
         State = provider?.State.ToString() ?? string.Empty,
         AvailabilityStatus = provider?.AvailabilityStatus.ToString() ?? string.Empty,
+        WorkingLatitude = provider?.WorkingLatitude,
+        WorkingLongitude = provider?.WorkingLongitude,
         CurrentLatitude = provider?.CurrentLatitude,
         CurrentLongitude = provider?.CurrentLongitude
     };

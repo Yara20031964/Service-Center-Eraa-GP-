@@ -61,6 +61,8 @@ namespace KHDMA.Application.Features.Bookings.Queries.GetBookingHistory
                 {
                     Id = b.Id,
                     ServiceName = b.Service.NameEn,
+                    ServiceNameEn = b.Service.NameEn,
+                    ServiceNameAr = b.Service.NameAr,
                     // Null until a provider accepts - a Pending or Dispatching booking
                     // has none, and an unguarded dereference here threw instead of
                     // returning null.

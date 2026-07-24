@@ -4,6 +4,7 @@ using KHDMA.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KHDMA.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260724114027_AddProviderLocationUpdatedAt")]
+    partial class AddProviderLocationUpdatedAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -229,9 +232,6 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.Property<string>("CancelReason")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("CancellationFee")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("datetime2");
@@ -629,9 +629,6 @@ namespace KHDMA.Infrastructure.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("PayoutApprovedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<decimal>("ProviderEarning")
                         .HasColumnType("decimal(18,2)");
 
@@ -738,12 +735,6 @@ namespace KHDMA.Infrastructure.Migrations
 
                     b.Property<decimal>("TotalEarnings")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<double?>("WorkingLatitude")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("WorkingLongitude")
-                        .HasColumnType("float");
 
                     b.HasKey("ApplicationUserId");
 

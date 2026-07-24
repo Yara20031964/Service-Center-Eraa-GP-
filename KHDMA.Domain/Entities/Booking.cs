@@ -26,6 +26,15 @@ namespace KHDMA.Domain.Entities
 
         public string? Notes { get; set; }
         public string? CancelReason { get; set; }
+
+        /// <summary>
+        /// What the customer was charged for cancelling, snapshot from the policy
+        /// at the moment of cancellation. Null when never cancelled; zero when
+        /// cancelled inside the free window. Stored rather than recomputed because
+        /// an admin can change the policy afterwards.
+        /// </summary>
+        public decimal? CancellationFee { get; set; }
+
         public DateTime CreateAt { get; set; } = DateTime.UtcNow;
 
         // ---- Lifecycle timestamps ----

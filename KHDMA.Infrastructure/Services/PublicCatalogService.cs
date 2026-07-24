@@ -208,13 +208,15 @@ namespace KHDMA.Infrastructure.Services
                     Math.Abs(Math.Cos(lat!.Value * Math.PI / 180.0)));
                 var longitudeDelta = effectiveRadiusKm / (111.32 * longitudeScale);
 
+                // Working point, matching dispatch: "providers near me" should list
+                // who can actually be sent here, not who happens to be driving past.
                 query = query
                     .Where(p => p.AvailabilityStatus == AvailabilityStatus.Online)
-                    .Where(p => p.CurrentLatitude != null && p.CurrentLongitude != null)
-                    .Where(p => p.CurrentLatitude >= lat.Value - latitudeDelta
-                             && p.CurrentLatitude <= lat.Value + latitudeDelta)
-                    .Where(p => p.CurrentLongitude >= lng!.Value - longitudeDelta
-                             && p.CurrentLongitude <= lng.Value + longitudeDelta);
+                    .Where(p => p.WorkingLatitude != null && p.WorkingLongitude != null)
+                    .Where(p => p.WorkingLatitude >= lat.Value - latitudeDelta
+                             && p.WorkingLatitude <= lat.Value + latitudeDelta)
+                    .Where(p => p.WorkingLongitude >= lng!.Value - longitudeDelta
+                             && p.WorkingLongitude <= lng.Value + longitudeDelta);
             }
 
             var rows = await query
@@ -227,8 +229,8 @@ namespace KHDMA.Infrastructure.Services
                     p.Rating,
                     p.ReviewCount,
                     p.HourlyRate,
-                    p.CurrentLatitude,
-                    p.CurrentLongitude,
+                    p.WorkingLatitude,
+                    p.WorkingLongitude,
                 })
                 .ToListAsync();
 
@@ -247,8 +249,8 @@ namespace KHDMA.Infrastructure.Services
                         ? Math.Round(DispatchService.Haversine(
                             lat!.Value,
                             lng!.Value,
-                            p.CurrentLatitude!.Value,
-                            p.CurrentLongitude!.Value), 2)
+                            p.WorkingLatitude!.Value,
+                            p.WorkingLongitude!.Value), 2)
                         : null,
                 });
 

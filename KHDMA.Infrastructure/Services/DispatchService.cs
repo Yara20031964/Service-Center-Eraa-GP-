@@ -217,7 +217,7 @@ namespace KHDMA.Infrastructure.Services
         /// leave the domain at city scale.
         ///
         /// The bounding-box predicate runs first so the index on
-        /// (CurrentLatitude, CurrentLongitude) can be used; the trigonometry then
+        /// (WorkingLatitude, WorkingLongitude) can be used; the trigonometry then
         /// only runs over the handful of rows the box admits.
         /// </remarks>
         private async Task<List<Candidate>> FindEligibleProvidersAsync(
@@ -231,6 +231,12 @@ namespace KHDMA.Infrastructure.Services
             var latRad = lat * Math.PI / 180.0;
             var lngRad = lng * Math.PI / 180.0;
 
+            // A provider who force-closed the app while Online keeps their last
+            // coordinates forever. Without this they still win the nearest-first
+            // sort, never accept, and cost the customer a full round each time.
+            // Null is treated as fresh so rows predating the column stay eligible.
+            var freshestAllowed = DateTime.UtcNow.AddMinutes(-_settings.MaxLocationAgeMinutes);
+
             // Projected into an anonymous type, not straight into the Candidate
             // record: EF cannot map a positional record's constructor argument back
             // to a property, so filtering on DistanceKm afterwards fails to
@@ -243,17 +249,18 @@ namespace KHDMA.Infrastructure.Services
                 .Where(p => p.ApplicationUser.Status == UserStatus.Active && !p.ApplicationUser.IsDeleted)
                 .Where(p => p.ProviderServices.Any(ps => ps.ServiceId == serviceId && ps.IsActive))
                 .Where(p => !p.Bookings.Any(b => BusyStatuses.Contains(b.Status)))
-                .Where(p => p.CurrentLatitude != null && p.CurrentLongitude != null)
+                .Where(p => p.WorkingLatitude != null && p.WorkingLongitude != null)
+                .Where(p => p.LocationUpdatedAt == null || p.LocationUpdatedAt >= freshestAllowed)
                 // --- bounding box prefilter (index-friendly) ---
-                .Where(p => p.CurrentLatitude >= lat - latDelta && p.CurrentLatitude <= lat + latDelta)
-                .Where(p => p.CurrentLongitude >= lng - lngDelta && p.CurrentLongitude <= lng + lngDelta)
+                .Where(p => p.WorkingLatitude >= lat - latDelta && p.WorkingLatitude <= lat + latDelta)
+                .Where(p => p.WorkingLongitude >= lng - lngDelta && p.WorkingLongitude <= lng + lngDelta)
                 .Select(p => new
                 {
                     p.ApplicationUserId,
                     DistanceKm = 2 * EarthRadiusKm * Math.Asin(Math.Sqrt(
-                        Math.Pow(Math.Sin((p.CurrentLatitude!.Value * Math.PI / 180.0 - latRad) / 2), 2)
-                        + Math.Cos(latRad) * Math.Cos(p.CurrentLatitude!.Value * Math.PI / 180.0)
-                          * Math.Pow(Math.Sin((p.CurrentLongitude!.Value * Math.PI / 180.0 - lngRad) / 2), 2))),
+                        Math.Pow(Math.Sin((p.WorkingLatitude!.Value * Math.PI / 180.0 - latRad) / 2), 2)
+                        + Math.Cos(latRad) * Math.Cos(p.WorkingLatitude!.Value * Math.PI / 180.0)
+                          * Math.Pow(Math.Sin((p.WorkingLongitude!.Value * Math.PI / 180.0 - lngRad) / 2), 2))),
                 })
                 // --- exact circle, then nearest first ---
                 .Where(x => x.DistanceKm <= radiusKm)
@@ -439,15 +446,23 @@ namespace KHDMA.Infrastructure.Services
             await _candidates.RemoveAsync(booking.Id);
         }
 
+        /// <summary>
+        /// Distance from the provider's working point, matching what dispatch sorted
+        /// on. Falls back to their live position for a provider who has one but never
+        /// set a working point.
+        /// </summary>
         private static double? DistanceKmOrNull(Booking booking, Provider provider)
         {
+            var providerLat = provider.WorkingLatitude ?? provider.CurrentLatitude;
+            var providerLng = provider.WorkingLongitude ?? provider.CurrentLongitude;
+
             if (booking.Latitude is null || booking.Longitude is null ||
-                provider.CurrentLatitude is null || provider.CurrentLongitude is null)
+                providerLat is null || providerLng is null)
                 return null;
 
             return Math.Round(Haversine(
                 booking.Latitude.Value, booking.Longitude.Value,
-                provider.CurrentLatitude.Value, provider.CurrentLongitude.Value), 2);
+                providerLat.Value, providerLng.Value), 2);
         }
 
         /// <summary>In-process haversine, for when the points are already loaded.</summary>
