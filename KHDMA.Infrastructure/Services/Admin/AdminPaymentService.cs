@@ -97,7 +97,15 @@ namespace KHDMA.Infrastructure.Services.Admin
                 
             if (payment == null) return ApiResponse<bool>.NotFound("Payment not found");
 
-            if (!string.IsNullOrEmpty(payment.TransactionReference))
+            // Seeded/demo payments (seed_/demo_ references) were never charged through
+            // Paymob, so there is nothing to reverse at the gateway - refund locally.
+            // Only genuine gateway transactions are sent to Paymob.
+            var reference = payment.TransactionReference;
+            var isGatewayTransaction = !string.IsNullOrEmpty(reference)
+                && !reference.StartsWith("seed_", StringComparison.OrdinalIgnoreCase)
+                && !reference.StartsWith("demo_", StringComparison.OrdinalIgnoreCase);
+
+            if (isGatewayTransaction)
             {
                 var paymobResult = await _paymobService.RefundAsync(payment.Id, refundDto.RefundAmount);
                 if (!paymobResult.Success)

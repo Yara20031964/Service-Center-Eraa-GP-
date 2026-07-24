@@ -150,18 +150,34 @@ public class AdminContentService : IAdminContentService
 
         var totalCount = payments.Count();
 
-        var items = payments
+        var pageItems = payments
             .OrderByDescending(p => p.PaidAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(p => new PayoutDto
-            {
-                Id = p.Id,
-                ProviderId = p.Booking.ProviderId,
-                Amount = p.ProviderEarning,
-                Status = "Pending",
-                CreatedAt = p.PaidAt ?? DateTime.UtcNow
-            });
+            .ToList();
+
+        // Resolve provider names in one lookup (the generic repo can't nest includes).
+        var providerIds = pageItems
+            .Select(p => p.Booking.ProviderId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Distinct()
+            .ToList();
+
+        var names = (await _unitOfWork.Repository<ApplicationUser>()
+                .GetAsync(u => providerIds.Contains(u.Id), tracked: false))
+            .ToDictionary(u => u.Id, u => u.FullName);
+
+        var items = pageItems.Select(p => new PayoutDto
+        {
+            Id = p.Id,
+            ProviderId = p.Booking.ProviderId,
+            ProviderName = p.Booking.ProviderId is not null && names.TryGetValue(p.Booking.ProviderId, out var n)
+                ? n
+                : string.Empty,
+            Amount = p.ProviderEarning,
+            Status = p.PayoutApprovedAt.HasValue ? "Approved" : "Pending",
+            CreatedAt = p.PaidAt ?? DateTime.UtcNow
+        });
 
         return PagedResponse<PayoutDto>.Ok(items, totalCount, page, pageSize);
     }
@@ -175,7 +191,13 @@ public class AdminContentService : IAdminContentService
         if (payment is null)
             return ApiResponse<string>.NotFound("Payout not found");
 
-        // Mark as processed — في المستقبل هنضيف Payout entity منفصلة
+        if (payment.PayoutApprovedAt.HasValue)
+            return ApiResponse<string>.Ok("Payout already approved");
+
+        payment.PayoutApprovedAt = DateTime.UtcNow;
+        _unitOfWork.Repository<PaymentEntity>().Update(payment);
+        await _unitOfWork.CommitAsync();
+
         return ApiResponse<string>.Ok("Payout approved successfully");
     }
 }
