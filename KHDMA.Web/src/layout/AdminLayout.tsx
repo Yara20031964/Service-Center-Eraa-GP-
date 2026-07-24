@@ -15,7 +15,7 @@ import {
 } from '../components/icons'
 import './AdminLayout.css'
 
-export type PageId = 'dashboard' | 'customers' | 'providers' | 'catalog'
+export type PageId = 'dashboard' | 'customers' | 'providers' | 'catalog' | 'payments'
 
 const NAV: { icon: ReactNode; label: string; page?: PageId }[] = [
   { icon: <GridIcon size={19} />, label: 'Dashboard', page: 'dashboard' },
@@ -23,7 +23,7 @@ const NAV: { icon: ReactNode; label: string; page?: PageId }[] = [
   { icon: <ProvidersIcon size={19} />, label: 'Providers', page: 'providers' },
   { icon: <WrenchIcon size={19} />, label: 'Catalog', page: 'catalog' },
   { icon: <CalendarIcon size={19} />, label: 'Bookings' },
-  { icon: <CardIcon size={19} />, label: 'Payments' },
+  { icon: <CardIcon size={19} />, label: 'Payments', page: 'payments' },
   { icon: <StarIcon size={19} />, label: 'Reviews' },
   { icon: <GearIcon size={19} />, label: 'Settings' },
 ]

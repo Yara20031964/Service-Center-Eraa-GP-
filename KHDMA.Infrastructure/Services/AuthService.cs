@@ -287,7 +287,11 @@ namespace KHDMA.Infrastructure.Services
 
         private async Task<string> SaveFileAsync(IFormFile file, string folder)
         {
-            var uploadsPath = Path.Combine(_env.WebRootPath, "uploads", folder);
+            var webRoot = _env.WebRootPath;
+            if (string.IsNullOrEmpty(webRoot))
+                webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+
+            var uploadsPath = Path.Combine(webRoot, "uploads", folder);
             Directory.CreateDirectory(uploadsPath);
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
             var filePath = Path.Combine(uploadsPath, fileName);

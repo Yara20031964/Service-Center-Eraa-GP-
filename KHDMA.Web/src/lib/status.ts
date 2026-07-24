@@ -57,3 +57,28 @@ export function availability(n: number): StatusInfo {
     }[n] ?? { label: '—', tone: 'gray' }
   ) as StatusInfo
 }
+
+// PaymentStatus: Pending, Paid, Failed, Refunded (serialized as ints)
+export function paymentStatus(n: number): StatusInfo {
+  return (
+    {
+      0: { label: 'Pending', tone: 'amber' },
+      1: { label: 'Paid', tone: 'green' },
+      2: { label: 'Failed', tone: 'red' },
+      3: { label: 'Refunded', tone: 'gray' },
+    }[n] ?? { label: '—', tone: 'gray' }
+  ) as StatusInfo
+}
+
+// PayoutStatus arrives as a string label from the API.
+export function payoutStatus(s: string): StatusInfo {
+  return (
+    {
+      Requested: { label: 'Requested', tone: 'amber' },
+      Pending: { label: 'Pending', tone: 'amber' },
+      Approved: { label: 'Approved', tone: 'green' },
+      Paid: { label: 'Paid', tone: 'green' },
+      Rejected: { label: 'Rejected', tone: 'red' },
+    }[s] ?? { label: s || '—', tone: 'gray' }
+  ) as StatusInfo
+}
