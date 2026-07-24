@@ -11,7 +11,8 @@ public interface IAdminServiceService
     Task<ApiResponse<ServiceDto>> CreateAsync(CreateServiceDto dto);
     Task<ApiResponse<ServiceDto>> UpdateAsync(Guid id, UpdateServiceDto dto);
     Task<ApiResponse<string>> ToggleActiveAsync(Guid id);
-    Task<ApiResponse<List<string>>> GetImagesAsync(Guid serviceId);
-    Task<ApiResponse<List<string>>> AddImagesAsync(Guid serviceId, List<IFormFile> images);
+    Task<ApiResponse<string>> DeleteAsync(Guid id);
+    Task<ApiResponse<List<ServiceImageDto>>> GetImagesAsync(Guid serviceId);
+    Task<ApiResponse<List<ServiceImageDto>>> AddImagesAsync(Guid serviceId, List<IFormFile> images);
     Task<ApiResponse<string>> DeleteImageAsync(Guid imageId);
 }

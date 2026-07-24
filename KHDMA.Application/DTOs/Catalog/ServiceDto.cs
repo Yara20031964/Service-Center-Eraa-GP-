@@ -19,6 +19,12 @@ public class ServiceDto
     public List<string> ImageUrls { get; set; } = [];
 }
 
+public class ServiceImageDto
+{
+    public Guid Id { get; set; }
+    public string ImageUrl { get; set; } = string.Empty;
+}
+
 public class CreateServiceDto
 {
     public Guid CategoryId { get; set; }

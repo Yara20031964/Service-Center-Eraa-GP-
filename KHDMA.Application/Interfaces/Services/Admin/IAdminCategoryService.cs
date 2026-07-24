@@ -10,4 +10,5 @@ public interface IAdminCategoryService
     Task<ApiResponse<CategoryDto>> CreateAsync(CreateCategoryDto dto);
     Task<ApiResponse<CategoryDto>> UpdateAsync(Guid id, UpdateCategoryDto dto);
     Task<ApiResponse<string>> ToggleActiveAsync(Guid id);
+    Task<ApiResponse<string>> DeleteAsync(Guid id);
 }

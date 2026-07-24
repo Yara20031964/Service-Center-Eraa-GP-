@@ -142,32 +142,58 @@ public class AdminServiceService : IAdminServiceService
         return ApiResponse<string>.Ok(service.IsActive ? "Service activated" : "Service deactivated");
     }
 
-    public async Task<ApiResponse<List<string>>> GetImagesAsync(Guid serviceId)
+    public async Task<ApiResponse<string>> DeleteAsync(Guid id)
     {
-        var urls = await _context.ServiceImages
-            .Where(i => i.ServiceId == serviceId)
-            .Select(i => i.ImageUrl)
-            .ToListAsync();
+        var service = await _context.Services
+            .Include(s => s.Images)
+            .FirstOrDefaultAsync(s => s.id == id);
+        if (service == null)
+            return ApiResponse<string>.NotFound("Service not found");
 
-        return ApiResponse<List<string>>.Ok(urls.Select(url => _imageUrlResolver.Resolve(url)!).ToList());
+        // Bookings reference the service (Restrict) - refuse rather than lose history.
+        var hasBookings = await _context.Bookings.AnyAsync(b => b.ServiceId == id);
+        if (hasBookings)
+            return ApiResponse<string>.Fail(
+                "This service has bookings and can't be deleted. Deactivate it instead.", 409);
+
+        _context.ServiceImages.RemoveRange(service.Images);
+        _context.ProviderServices.RemoveRange(
+            _context.ProviderServices.Where(ps => ps.ServiceId == id));
+        _context.Set<CustomerFavorite>().RemoveRange(
+            _context.Set<CustomerFavorite>().Where(f => f.ServiceId == id));
+        _context.Services.Remove(service);
+
+        await _context.SaveChangesAsync();
+        return ApiResponse<string>.Ok("Service deleted");
     }
 
-    public async Task<ApiResponse<List<string>>> AddImagesAsync(Guid serviceId, List<IFormFile> images)
+    public async Task<ApiResponse<List<ServiceImageDto>>> GetImagesAsync(Guid serviceId)
+    {
+        var images = await _context.ServiceImages
+            .Where(i => i.ServiceId == serviceId)
+            .Select(i => new ServiceImageDto { Id = i.Id, ImageUrl = i.ImageUrl })
+            .ToListAsync();
+
+        return ApiResponse<List<ServiceImageDto>>.Ok(images);
+    }
+
+    public async Task<ApiResponse<List<ServiceImageDto>>> AddImagesAsync(Guid serviceId, List<IFormFile> images)
     {
         var serviceExists = await _context.Services.AnyAsync(s => s.id == serviceId);
         if (!serviceExists)
-            return ApiResponse<List<string>>.NotFound("Service not found");
+            return ApiResponse<List<ServiceImageDto>>.NotFound("Service not found");
 
-        var urls = new List<string>();
+        var added = new List<ServiceImageDto>();
         foreach (var file in images)
         {
             var url = await SaveFileAsync(file, "services");
-            _context.ServiceImages.Add(new ServiceImage { ServiceId = serviceId, ImageUrl = url });
-            urls.Add(_imageUrlResolver.Resolve(url)!);
+            var img = new ServiceImage { ServiceId = serviceId, ImageUrl = url };
+            _context.ServiceImages.Add(img);
+            added.Add(new ServiceImageDto { Id = img.Id, ImageUrl = url });
         }
 
         await _context.SaveChangesAsync();
-        return ApiResponse<List<string>>.Ok(urls);
+        return ApiResponse<List<ServiceImageDto>>.Ok(added);
     }
 
     public async Task<ApiResponse<string>> DeleteImageAsync(Guid imageId)

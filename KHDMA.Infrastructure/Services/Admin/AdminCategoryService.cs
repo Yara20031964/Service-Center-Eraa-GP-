@@ -93,6 +93,23 @@ public class AdminCategoryService : IAdminCategoryService
         return ApiResponse<string>.Ok(category.IsActive ? "Category activated" : "Category deactivated");
     }
 
+    public async Task<ApiResponse<string>> DeleteAsync(Guid id)
+    {
+        var category = await _context.Categories.FirstOrDefaultAsync(c => c.id == id);
+        if (category == null)
+            return ApiResponse<string>.NotFound("Category not found");
+
+        var hasServices = await _context.Services.AnyAsync(s => s.CategoryId == id);
+        if (hasServices)
+            return ApiResponse<string>.Fail(
+                "This category has services and can't be deleted. Remove or move them first.", 409);
+
+        _context.Categories.Remove(category);
+        await _context.SaveChangesAsync();
+
+        return ApiResponse<string>.Ok("Category deleted");
+    }
+
     private CategoryDto MapToDto(Category c) => new()
     {
         Id = c.id,

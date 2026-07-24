@@ -1,0 +1,58 @@
+/* Shared UI primitives used across pages. */
+
+/* ---------- Primary button ---------- */
+.btn {
+  width: 100%;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ec2234 0%, var(--brand-600) 100%);
+  box-shadow: var(--shadow-btn);
+  transition: transform 0.12s, box-shadow 0.2s, filter 0.18s, opacity 0.18s;
+}
+.btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+  box-shadow: 0 16px 30px -12px rgba(225, 29, 46, 0.7);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--brand-soft), var(--shadow-btn);
+}
+.btn:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+/* ---------- Spinner ---------- */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2.4px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.4s;
+  }
+  .btn {
+    transition: none;
+  }
+}

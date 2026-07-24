@@ -1,0 +1,81 @@
+:root {
+  /* Brand palette taken from the Admin Portal reference. */
+  --brand: #e11d2e;
+  --brand-600: #d01827;
+  --brand-700: #b5121f;
+  --brand-soft: rgba(225, 29, 46, 0.08);
+
+  --ink: #0f1b33; /* headings — deep navy */
+  --text: #64748b; /* body copy */
+  --text-soft: #94a3b8; /* helper / footer */
+  --label: #334155; /* field labels */
+
+  --surface: #ffffff;
+  --field: #eef1f5; /* filled input background */
+  --field-focus: #ffffff;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --danger-border: #fecaca;
+  --success: #16a34a;
+
+  --radius: 12px;
+  --shadow-card: 0 24px 60px -20px rgba(15, 27, 51, 0.25);
+  --shadow-btn: 0 12px 24px -10px rgba(225, 29, 46, 0.6);
+
+  --sans: 'Poppins', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f4f6fb;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
