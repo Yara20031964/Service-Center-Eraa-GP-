@@ -22,6 +22,9 @@ namespace KHDMA.Domain.Entities
         public  string? TransactionReference { get; set; }
         public DateTime? PaidAt { get; set; }
 
+        /// <summary>When an admin approved the provider payout for this payment; null = still pending.</summary>
+        public DateTime? PayoutApprovedAt { get; set; }
+
         //Navigation properties
         public Booking Booking { get; set; }
     }
