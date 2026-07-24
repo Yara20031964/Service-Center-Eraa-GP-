@@ -10,8 +10,10 @@ using KHDMA.Application.Features.Bookings.Queries.ExportBookings;
 using System.Security.Claims;
 using KHDMA.Application.DTOs.Booking;
 using KHDMA.Application.DTOs.RealTime;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Domain.Enums;
 using Domain.Common;
+using Application.DTOs.Payment;
 
 namespace KHDMA.API.Controllers
 {
@@ -25,10 +27,12 @@ namespace KHDMA.API.Controllers
     public class BookingController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly IBookingDetailsService _bookingDetails;
 
-        public BookingController(IMediator mediator)
+        public BookingController(IMediator mediator, IBookingDetailsService bookingDetails)
         {
             _mediator = mediator;
+            _bookingDetails = bookingDetails;
         }
 
         /// <summary>
@@ -36,6 +40,11 @@ namespace KHDMA.API.Controllers
         /// to nearby eligible providers and the first to accept wins.
         /// </summary>
         [HttpPost]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Create([FromBody] CreateBookingDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -51,6 +60,11 @@ namespace KHDMA.API.Controllers
         /// Offered to that provider only - it never falls back to a broadcast.
         /// </summary>
         [HttpPost("direct")]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<CreateBookingResultDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateDirect([FromBody] CreateDirectBookingDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -81,7 +95,29 @@ namespace KHDMA.API.Controllers
                 Notes = dto.Notes,
             };
 
+        [HttpGet("{id:guid}")]
+        [Tags(ApiTags.CommonBookings)]
+        [ProducesResponseType<ApiResponse<BookingDetailDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<BookingDetailDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<BookingDetailDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<BookingDetailDto>>(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                var unauthorized = ApiResponse<BookingDetailDto>.Unauthorized();
+                return StatusCode(unauthorized.StatusCode, unauthorized);
+            }
+
+            var result = await _bookingDetails.GetAsync(id, userId);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpDelete("{id}")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Cancel(Guid id, [FromBody] string reason)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -102,6 +138,8 @@ namespace KHDMA.API.Controllers
         [HttpPost("admin/{id}/cancel")]
         [Authorize(Roles = "Admin")]
         [Tags(ApiTags.AdminBookings)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AdminCancel(Guid id, [FromBody] string reason)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -124,6 +162,8 @@ namespace KHDMA.API.Controllers
         /// </summary>
         [HttpGet("history")]
         [Tags(ApiTags.CommonBookings)]
+        [ProducesResponseType<PagedResponse<BookingListDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetHistory([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -145,6 +185,7 @@ namespace KHDMA.API.Controllers
         [HttpGet("admin")]
         [Authorize(Roles = "Admin")]
         [Tags(ApiTags.AdminBookings)]
+        [ProducesResponseType<PagedResponse<BookingListDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAdminList([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string? customerId, [FromQuery] string? providerId, [FromQuery] int page = 1)
         {
             var query = new GetAdminBookingsQuery
@@ -163,6 +204,9 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("{id}/complete")]
         [Tags(ApiTags.ProviderJobs)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Complete(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -184,6 +228,11 @@ namespace KHDMA.API.Controllers
         /// </summary>
         [HttpPost("{id}/accept")]
         [Tags(ApiTags.ProviderJobs)]
+        [ProducesResponseType<ApiResponse<AcceptResultDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<AcceptResultDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<AcceptResultDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<AcceptResultDto>>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ApiResponse<AcceptResultDto>>(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Accept(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -202,6 +251,9 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("{id}/reject")]
         [Tags(ApiTags.ProviderJobs)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Reject(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -219,6 +271,9 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("{id}/mark-en-route")]
         [Tags(ApiTags.ProviderJobs)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> MarkEnRoute(Guid id, [FromQuery] string? eta)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -238,6 +293,9 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("{id}/mark-arrived")]
         [Tags(ApiTags.ProviderJobs)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> MarkArrived(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -256,6 +314,9 @@ namespace KHDMA.API.Controllers
 
         [HttpPost("{id}/mark-in-progress")]
         [Tags(ApiTags.ProviderJobs)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> MarkInProgress(Guid id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -275,6 +336,8 @@ namespace KHDMA.API.Controllers
         [HttpGet("admin/export")]
         [Authorize(Roles = "Admin")]
         [Tags(ApiTags.AdminBookings)]
+        [Produces("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+        [ProducesResponseType<FileResult>(StatusCodes.Status200OK)]
         public async Task<IActionResult> Export([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] string format = "csv")
         {
             var query = new ExportBookingsQuery
@@ -292,9 +355,21 @@ namespace KHDMA.API.Controllers
             return File(result, contentType, fileName);
         }
         [HttpPost("{id}/retry-payment")]
+        [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RetryPayment(Guid id)
         {
-            var command = new KHDMA.Application.Features.Bookings.Commands.RetryPayment.RetryPaymentCommand { BookingId = id };
+            var customerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(customerId))
+                return Unauthorized(ApiResponse<PaymentKeyResponseDto>.Unauthorized());
+
+            var command = new KHDMA.Application.Features.Bookings.Commands.RetryPayment.RetryPaymentCommand
+            {
+                BookingId = id,
+                CustomerId = customerId,
+            };
             var result = await _mediator.Send(command);
             return StatusCode(result.StatusCode, result);
         }

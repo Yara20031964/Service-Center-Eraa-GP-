@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Domain.Common;
+using KHDMA.Application.DTOs.Admin;
 using KHDMA.Application.DTOs.RealTime;
 using KHDMA.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -31,6 +32,8 @@ namespace KHDMA.API.Controllers
 
         /// <summary>The caller's conversation list.</summary>
         [HttpGet("threads")]
+        [ProducesResponseType<ApiResponse<List<ChatThreadDto>>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetThreads()
         {
             if (UserId is null) return Unauthorized(ApiResponse<object>.Unauthorized());
@@ -44,6 +47,9 @@ namespace KHDMA.API.Controllers
         /// that missed messages while disconnected replays them from here.
         /// </summary>
         [HttpGet("{bookingId:guid}/history")]
+        [ProducesResponseType<PagedResponse<ChatMessageDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<PagedResponse<ChatMessageDto>>(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetHistory(
             Guid bookingId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
@@ -58,6 +64,12 @@ namespace KHDMA.API.Controllers
         /// broken WebSocket can still participate.
         /// </summary>
         [HttpPost("{bookingId:guid}/messages")]
+        [ProducesResponseType<ApiResponse<ChatMessageDto>>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ApiResponse<ChatMessageDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<ChatMessageDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<ChatMessageDto>>(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType<ApiResponse<ChatMessageDto>>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ApiResponse<ChatMessageDto>>(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Send(Guid bookingId, [FromBody] SendMessageDto dto)
         {
             if (UserId is null) return Unauthorized(ApiResponse<ChatMessageDto>.Unauthorized());
@@ -71,6 +83,10 @@ namespace KHDMA.API.Controllers
         /// with the returned url.
         /// </summary>
         [HttpPost("{bookingId:guid}/attachments")]
+        [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<PagedResponse<ChatMessageDto>>(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UploadAttachment(Guid bookingId, IFormFile file)
         {
             if (UserId is null) return Unauthorized(ApiResponse<string>.Unauthorized());
@@ -96,6 +112,9 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{bookingId:guid}/read")]
+        [ProducesResponseType<ApiResponse<int>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<int>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<int>>(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> MarkRead(Guid bookingId)
         {
             if (UserId is null) return Unauthorized(ApiResponse<int>.Unauthorized());
@@ -117,6 +136,8 @@ namespace KHDMA.API.Controllers
         public AdminChatController(IChatService chat) => _chat = chat;
 
         [HttpGet("{bookingId:guid}/transcript")]
+        [ProducesResponseType<ApiResponse<List<ChatTranscriptDto>>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<List<ChatTranscriptDto>>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTranscript(Guid bookingId)
         {
             var result = await _chat.GetTranscriptAsync(bookingId);

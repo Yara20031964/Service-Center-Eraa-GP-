@@ -13,5 +13,6 @@ namespace KHDMA.Application.DTOs.Auth.Response
         public DateTime ExpiresAt { get; set; }
         public string Role { get; set; }
         public string UserName { get; set; }
+        public string UserId { get; set; } = string.Empty;
     }
 }

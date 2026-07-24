@@ -1,3 +1,4 @@
+using Domain.Common;
 using KHDMA.Application.DTOs.Catalog;
 using KHDMA.Application.Interfaces.Services.Admin;
 using Microsoft.AspNetCore.Authorization;
@@ -19,6 +20,7 @@ public class AdminCategoriesController : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType<PagedResponse<CategoryDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search,
         [FromQuery] bool? isActive,
@@ -30,6 +32,8 @@ public class AdminCategoriesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ProducesResponseType<ApiResponse<CategoryDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<CategoryDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _service.GetByIdAsync(id);
@@ -37,6 +41,7 @@ public class AdminCategoriesController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType<ApiResponse<CategoryDto>>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateCategoryDto dto)
     {
         var result = await _service.CreateAsync(dto);
@@ -44,6 +49,8 @@ public class AdminCategoriesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType<ApiResponse<CategoryDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<CategoryDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
@@ -51,6 +58,8 @@ public class AdminCategoriesController : ControllerBase
     }
 
     [HttpPut("{id}/toggle-active")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleActive(Guid id)
     {
         var result = await _service.ToggleActiveAsync(id);

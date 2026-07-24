@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Domain.Common;
 using KHDMA.Application.DTOs.Profile;
 using KHDMA.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +23,8 @@ public class ProfileController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfile()
     {
         var result = await _service.GetProfileAsync(UserId);
@@ -29,6 +32,8 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPut]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileDto dto)
     {
         var result = await _service.UpdateProfileAsync(UserId, dto);
@@ -36,6 +41,9 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPut("change-password")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
         var result = await _service.ChangePasswordAsync(UserId, dto);
@@ -43,6 +51,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet("addresses")]
+    [ProducesResponseType<ApiResponse<List<AddressDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAddresses()
     {
         var result = await _service.GetAddressesAsync(UserId);
@@ -50,6 +59,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost("addresses")]
+    [ProducesResponseType<ApiResponse<AddressDto>>(StatusCodes.Status201Created)]
     public async Task<IActionResult> AddAddress([FromBody] CreateAddressDto dto)
     {
         var result = await _service.AddAddressAsync(UserId, dto);
@@ -57,6 +67,8 @@ public class ProfileController : ControllerBase
     }
 
     [HttpDelete("addresses/{addressId}")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAddress(Guid addressId)
     {
         var result = await _service.DeleteAddressAsync(UserId, addressId);
@@ -64,6 +76,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet("certificates")]
+    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCertificateImages()
     {
         var result = await _service.GetCertificateImagesAsync(UserId);
@@ -71,6 +84,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost("certificates")]
+    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> AddCertificateImages([FromForm] List<IFormFile> images)
     {
         var result = await _service.AddCertificateImagesAsync(UserId, images);
@@ -78,6 +92,8 @@ public class ProfileController : ControllerBase
     }
 
     [HttpDelete("certificates/{imageId}")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCertificateImage(Guid imageId)
     {
         var result = await _service.DeleteCertificateImageAsync(UserId, imageId);
@@ -85,6 +101,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpGet("portfolio")]
+    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPortfolioImages()
     {
         var result = await _service.GetPortfolioImagesAsync(UserId);
@@ -92,6 +109,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost("portfolio")]
+    [ProducesResponseType<ApiResponse<List<string>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> AddPortfolioImages([FromForm] List<IFormFile> images)
     {
         var result = await _service.AddPortfolioImagesAsync(UserId, images);
@@ -99,6 +117,8 @@ public class ProfileController : ControllerBase
     }
 
     [HttpDelete("portfolio/{imageId}")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeletePortfolioImage(Guid imageId)
     {
         var result = await _service.DeletePortfolioImageAsync(UserId, imageId);

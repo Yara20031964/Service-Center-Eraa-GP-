@@ -2,6 +2,7 @@
 using Domain.Common;
 using KHDMA.Application.Interfaces.Payment;
 using KHDMA.Application.Interfaces.Repositories;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +14,11 @@ namespace KHDMA.Infrastructure.Services.Payment;
 
 public class PaymobService : IPaymobService
 {
+    // Matches the seeded CommissionSettings rate and keeps checkout available if that row is missing.
+    private const decimal DefaultCommissionRate = 0.15m;
+
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICommissionService _commissionService;
     private readonly IConfiguration _config;
     private readonly HttpClient _httpClient;
 
@@ -24,10 +29,12 @@ public class PaymobService : IPaymobService
 
     public PaymobService(
         IUnitOfWork unitOfWork,
+        ICommissionService commissionService,
         IConfiguration config,
         HttpClient httpClient)
     {
         _unitOfWork = unitOfWork;
+        _commissionService = commissionService;
         _config = config;
         _httpClient = httpClient;
     }
@@ -68,18 +75,38 @@ public class PaymobService : IPaymobService
         if (paymentKey is null)
             return ApiResponse<PaymentKeyResponseDto>.Fail("Paymob payment key failed");
 
-        // Create Payment record
-        var payment = new PaymentEntity
-        {
-            BookingId = booking.Id,
-            Amount = booking.TotalPrice,
-            CommissionAmount = booking.TotalPrice * 0.15m,
-            ProviderEarning = booking.TotalPrice * 0.85m,
-            PaymentStatus = PaymentStatus.Pending,
-            TransactionReference = orderId
-        };
+        var commissionResult = await _commissionService.GetCurrentRateAsync();
+        var commissionRate = commissionResult.Success && commissionResult.Data is not null
+            ? commissionResult.Data.Rate
+            : DefaultCommissionRate;
+        var commissionAmount = booking.TotalPrice * commissionRate;
 
-        await _unitOfWork.Repository<PaymentEntity>().CreateAsync(payment);
+        // Booking creation normally owns this one-to-one row. Reuse it so both
+        // initial payment and retry only replace the gateway transaction.
+        var paymentRepository = _unitOfWork.Repository<PaymentEntity>();
+        var payment = await paymentRepository.GetOneAsync(p => p.BookingId == booking.Id);
+        if (payment is null)
+        {
+            payment = new PaymentEntity
+            {
+                BookingId = booking.Id,
+                Amount = booking.TotalPrice,
+                CommissionAmount = commissionAmount,
+                ProviderEarning = booking.TotalPrice - commissionAmount,
+                PaymentStatus = PaymentStatus.Pending,
+                TransactionReference = orderId
+            };
+            await paymentRepository.CreateAsync(payment);
+        }
+        else
+        {
+            payment.CommissionAmount = commissionAmount;
+            payment.ProviderEarning = booking.TotalPrice - commissionAmount;
+            payment.PaymentStatus = PaymentStatus.Pending;
+            payment.TransactionReference = orderId;
+            paymentRepository.Update(payment);
+        }
+
         await _unitOfWork.CommitAsync();
 
         return ApiResponse<PaymentKeyResponseDto>.Ok(new PaymentKeyResponseDto
@@ -132,7 +159,7 @@ public class PaymobService : IPaymobService
     }
 
     // ── REFUND ────────────────────────────────────────────────
-    public async Task<ApiResponse<string>> RefundAsync(Guid paymentId)
+    public async Task<ApiResponse<string>> RefundAsync(Guid paymentId, decimal? amount = null)
     {
         var payment = await _unitOfWork.Repository<PaymentEntity>()
             .GetOneAsync(p => p.Id == paymentId &&
@@ -141,11 +168,15 @@ public class PaymobService : IPaymobService
         if (payment is null)
             return ApiResponse<string>.NotFound("Payment not found or not eligible for refund");
 
+        var refundAmount = amount ?? payment.Amount;
+        if (refundAmount <= 0 || refundAmount > payment.Amount)
+            return ApiResponse<string>.Fail("Refund amount must be greater than zero and no more than the payment amount");
+
         var authToken = await GetAuthTokenAsync();
         if (authToken is null)
             return ApiResponse<string>.Fail("Paymob auth failed");
 
-        var amountCents = (int)(payment.Amount * 100);
+        var amountCents = (int)(refundAmount * 100);
 
         var refundPayload = new
         {

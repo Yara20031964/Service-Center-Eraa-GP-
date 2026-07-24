@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Domain.Common;
 using KHDMA.Application.Interfaces.Repositories;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Domain.Entities;
 using PaymentEntity = KHDMA.Domain.Entities.Payment;
 namespace KHDMA.Infrastructure.Services.Admin;
@@ -9,10 +10,12 @@ namespace KHDMA.Infrastructure.Services.Admin;
 public class AdminContentService : IAdminContentService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public AdminContentService(IUnitOfWork unitOfWork)
+    public AdminContentService(IUnitOfWork unitOfWork, IImageUrlResolver imageUrlResolver)
     {
         _unitOfWork = unitOfWork;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<ApiResponse<IEnumerable<BannerDto>>> GetAllBannersAsync()
@@ -26,7 +29,7 @@ public class AdminContentService : IAdminContentService
             {
                 Id = b.Id,
                 Title = b.Title,
-                ImageUrl = b.ImageUrl,
+                ImageUrl = _imageUrlResolver.Resolve(b.ImageUrl)!,
                 IsActive = b.IsActive,
                 Order = b.Order,
                 CreatedAt = b.CreatedAt
@@ -54,7 +57,7 @@ public class AdminContentService : IAdminContentService
         {
             Id = banner.Id,
             Title = banner.Title,
-            ImageUrl = banner.ImageUrl,
+            ImageUrl = _imageUrlResolver.Resolve(banner.ImageUrl)!,
             IsActive = banner.IsActive,
             Order = banner.Order,
             CreatedAt = banner.CreatedAt

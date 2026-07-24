@@ -1,21 +1,26 @@
 using MediatR;
-using KHDMA.Application.Interfaces.Services;
 using Domain.Common;
+using Application.DTOs.Payment;
+using KHDMA.Application.Interfaces.Payment;
 
 namespace KHDMA.Application.Features.Bookings.Commands.RetryPayment
 {
-    public class RetryPaymentCommandHandler : IRequestHandler<RetryPaymentCommand, ApiResponse<string>>
+    public class RetryPaymentCommandHandler : IRequestHandler<RetryPaymentCommand, ApiResponse<PaymentKeyResponseDto>>
     {
-        private readonly IStripePaymentService _paymentService;
+        private readonly IPaymobService _paymentService;
 
-        public RetryPaymentCommandHandler(IStripePaymentService paymentService)
+        public RetryPaymentCommandHandler(IPaymobService paymentService)
         {
             _paymentService = paymentService;
         }
 
-        public async Task<ApiResponse<string>> Handle(RetryPaymentCommand request, CancellationToken cancellationToken)
+        public async Task<ApiResponse<PaymentKeyResponseDto>> Handle(
+            RetryPaymentCommand request,
+            CancellationToken cancellationToken)
         {
-            return await _paymentService.CreatePaymentIntentAsync(request.BookingId);
+            return await _paymentService.InitiatePaymentAsync(
+                new PaymentInitDto { BookingId = request.BookingId },
+                request.CustomerId);
         }
     }
 }

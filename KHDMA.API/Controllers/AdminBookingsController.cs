@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Domain.Common;
+using KHDMA.Application.DTOs.Admin;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Enums;
 using System;
@@ -21,6 +23,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType<PagedResponse<BookingListDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllBookings(
             [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
             [FromQuery] BookingStatus? status = null,
@@ -32,6 +35,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType<ApiResponse<BookingDetailDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<BookingDetailDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetBookingDetails(Guid id)
         {
             var response = await _bookingService.GetBookingDetailsAsync(id);
@@ -40,6 +45,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("{id}/cancel")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CancelBooking(Guid id, [FromBody] string reason)
         {
             var response = await _bookingService.CancelBookingAsync(id, reason);
@@ -48,6 +55,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("{id}/history")]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetBookingHistory(Guid id)
         {
             var response = await _bookingService.GetBookingStatusHistoryAsync(id);
@@ -56,6 +65,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("{id}/transcript")]
+        [ProducesResponseType<PagedResponse<ChatTranscriptDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetChatTranscript(Guid id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             var response = await _bookingService.GetChatTranscriptAsync(id, page, pageSize);

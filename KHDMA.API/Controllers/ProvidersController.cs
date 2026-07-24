@@ -26,6 +26,9 @@ namespace KHDMA.API.Controllers
 
         /// <summary>Earnings for a period: daily | weekly | monthly | all.</summary>
         [HttpGet("earnings")]
+        [ProducesResponseType<ApiResponse<EarningsDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<EarningsDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<EarningsDto>>(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetEarnings([FromQuery] string period = "weekly")
         {
             if (ProviderId is null) return Unauthorized(ApiResponse<EarningsDto>.Unauthorized());
@@ -35,6 +38,9 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("wallet")]
+        [ProducesResponseType<ApiResponse<WalletDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<WalletDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<WalletDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetWallet()
         {
             if (ProviderId is null) return Unauthorized(ApiResponse<WalletDto>.Unauthorized());
@@ -45,6 +51,10 @@ namespace KHDMA.API.Controllers
 
         /// <summary>Request a withdrawal against the available balance.</summary>
         [HttpPost("payouts")]
+        [ProducesResponseType<ApiResponse<ProviderPayoutDto>>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ApiResponse<ProviderPayoutDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ApiResponse<ProviderPayoutDto>>(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType<ApiResponse<ProviderPayoutDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RequestPayout([FromBody] RequestPayoutDto dto)
         {
             if (ProviderId is null) return Unauthorized(ApiResponse<ProviderPayoutDto>.Unauthorized());

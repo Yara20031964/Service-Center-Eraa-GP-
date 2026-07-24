@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Domain.Common;
+using KHDMA.Application.DTOs.Admin;
 using KHDMA.Application.Interfaces.Services.Admin;
 using System;
 using System.Threading.Tasks;
@@ -20,6 +22,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType<PagedResponse<ReviewDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllReviews(
             [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
             [FromQuery] string? providerId = null, [FromQuery] string? customerId = null,
@@ -30,6 +33,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType<ApiResponse<ReviewDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<ReviewDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetReviewDetails(Guid id)
         {
             var response = await _reviewService.GetReviewDetailsAsync(id);
@@ -38,6 +43,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPut("{id}/status")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> UpdateReviewStatus(Guid id, [FromQuery] bool isDeleted, [FromQuery] bool isHidden)
         {
             var response = await _reviewService.HideOrDeleteReviewAsync(id, isDeleted, isHidden);

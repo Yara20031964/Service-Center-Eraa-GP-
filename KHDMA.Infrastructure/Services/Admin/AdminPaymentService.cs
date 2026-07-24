@@ -6,8 +6,8 @@ using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
 using Domain.Common;
 using KHDMA.Application.DTOs.Admin;
+using KHDMA.Application.Interfaces.Payment;
 using KHDMA.Application.Interfaces.Services.Admin;
-using KHDMA.Application.Interfaces.Services;
 using KHDMA.Infrastructure.Data;
 
 namespace KHDMA.Infrastructure.Services.Admin
@@ -15,12 +15,12 @@ namespace KHDMA.Infrastructure.Services.Admin
     public class AdminPaymentService : IAdminPaymentService
     {
         private readonly AppDbContext _context;
-        private readonly IStripePaymentService _stripeService;
+        private readonly IPaymobService _paymobService;
 
-        public AdminPaymentService(AppDbContext context, IStripePaymentService stripeService)
+        public AdminPaymentService(AppDbContext context, IPaymobService paymobService)
         {
             _context = context;
-            _stripeService = stripeService;
+            _paymobService = paymobService;
         }
 
         public async Task<PagedResponse<PaymentDto>> GetAllPaymentsAsync(int pageNumber, int pageSize, PaymentStatus? status, DateTime? fromDate, DateTime? toDate)
@@ -99,8 +99,9 @@ namespace KHDMA.Infrastructure.Services.Admin
 
             if (!string.IsNullOrEmpty(payment.TransactionReference))
             {
-                var stripeResult = await _stripeService.RefundPaymentAsync(payment.TransactionReference, refundDto.RefundAmount, refundDto.Reason);
-                if (!stripeResult.Success) return ApiResponse<bool>.Fail(stripeResult.Message);
+                var paymobResult = await _paymobService.RefundAsync(payment.Id, refundDto.RefundAmount);
+                if (!paymobResult.Success)
+                    return ApiResponse<bool>.Fail(paymobResult.Message, paymobResult.StatusCode);
             }
 
             payment.PaymentStatus = PaymentStatus.Refunded;

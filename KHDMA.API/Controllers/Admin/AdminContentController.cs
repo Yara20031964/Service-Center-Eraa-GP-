@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Admin;
 using Application.Interfaces.Services;
+using Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -22,6 +23,7 @@ public class AdminContentController : ControllerBase
     // ── BANNERS ───────────────────────────────────────────────
     // GET api/admin/banners
     [HttpGet("banners")]
+    [ProducesResponseType<ApiResponse<IEnumerable<BannerDto>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBanners()
     {
         var result = await _service.GetAllBannersAsync();
@@ -30,6 +32,7 @@ public class AdminContentController : ControllerBase
 
     // POST api/admin/banners
     [HttpPost("banners")]
+    [ProducesResponseType<ApiResponse<BannerDto>>(StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateBanner([FromBody] CreateBannerDto dto)
     {
         var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
@@ -39,6 +42,8 @@ public class AdminContentController : ControllerBase
 
     // PUT api/admin/banners/{id}/toggle
     [HttpPut("banners/{id:guid}/toggle")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleBanner(Guid id)
     {
         var result = await _service.ToggleBannerAsync(id);
@@ -47,6 +52,8 @@ public class AdminContentController : ControllerBase
 
     // DELETE api/admin/banners/{id}
     [HttpDelete("banners/{id:guid}")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBanner(Guid id)
     {
         var result = await _service.DeleteBannerAsync(id);
@@ -56,6 +63,8 @@ public class AdminContentController : ControllerBase
     // ── CANCELLATION POLICY ───────────────────────────────────
     // GET api/admin/cancellation-policy
     [HttpGet("cancellation-policy")]
+    [ProducesResponseType<ApiResponse<CancellationPolicyDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<CancellationPolicyDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPolicy()
     {
         var result = await _service.GetCancellationPolicyAsync();
@@ -64,6 +73,8 @@ public class AdminContentController : ControllerBase
 
     // PUT api/admin/cancellation-policy
     [HttpPut("cancellation-policy")]
+    [ProducesResponseType<ApiResponse<CancellationPolicyDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<CancellationPolicyDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdatePolicy([FromBody] UpdateCancellationPolicyDto dto)
     {
         var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";
@@ -74,6 +85,7 @@ public class AdminContentController : ControllerBase
     // ── PAYOUTS ───────────────────────────────────────────────
     // GET api/admin/payouts
     [HttpGet("payouts")]
+    [ProducesResponseType<PagedResponse<PayoutDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPayouts(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
@@ -84,6 +96,8 @@ public class AdminContentController : ControllerBase
 
     // PUT api/admin/payouts/{id}/approve
     [HttpPut("payouts/{id:guid}/approve")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ApprovePayout(Guid id)
     {
         var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "system";

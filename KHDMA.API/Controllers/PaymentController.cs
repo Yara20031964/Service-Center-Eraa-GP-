@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.Payment;
+using Domain.Common;
 using KHDMA.Application.Interfaces.Payment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,9 @@ public class PaymentController : ControllerBase
 
     // POST api/payments/initiate
     [HttpPost("initiate")]
+    [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<PaymentKeyResponseDto>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Initiate([FromBody] PaymentInitDto dto)
     {
         var customerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "temp-id";
@@ -35,6 +39,9 @@ public class PaymentController : ControllerBase
     // HandleWebhookAsync verifies it before trusting the body.
     [HttpPost("webhook")]
     [AllowAnonymous]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Webhook(
         [FromBody] PaymentWebhookDto dto,
         [FromQuery] string hmac)
@@ -45,6 +52,9 @@ public class PaymentController : ControllerBase
 
     // POST api/payments/{id}/refund
     [HttpPost("{id:guid}/refund")]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiResponse<string>>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Refund(Guid id)
     {
         var result = await _paymobService.RefundAsync(id);

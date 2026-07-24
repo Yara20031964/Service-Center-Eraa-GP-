@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Domain.Common;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Application.DTOs.Admin;
 using KHDMA.Domain.Enums;
@@ -22,6 +23,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType<PagedResponse<PaymentDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllPayments(
             [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
             [FromQuery] PaymentStatus? status = null,
@@ -32,6 +34,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType<ApiResponse<PaymentDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<PaymentDto>>(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetPaymentDetails(Guid id)
         {
             var response = await _paymentService.GetPaymentDetailsAsync(id);
@@ -40,6 +44,8 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpPost("refund")]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ApiResponse<bool>>(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> IssueRefund([FromBody] RefundDto refundDto)
         {
             var response = await _paymentService.IssueRefundAsync(refundDto);
@@ -48,6 +54,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("provider-earnings/{providerId}")]
+        [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetProviderEarningsSummary(string providerId)
         {
             var response = await _paymentService.GetProviderEarningsSummaryAsync(providerId);
@@ -55,6 +62,7 @@ namespace KHDMA.API.Controllers
         }
 
         [HttpGet("provider-earnings/{providerId}/breakdown")]
+        [ProducesResponseType<PagedResponse<PaymentDto>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetProviderEarningsBreakdown(string providerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var response = await _paymentService.GetProviderEarningsBreakdownAsync(providerId, page, pageSize);

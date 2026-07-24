@@ -61,6 +61,7 @@ public sealed class TestHarness : IDisposable
             Locks,
             Candidates,
             new StubPricingService(providerEarning),
+            new PassthroughImageUrlResolver(),
             Microsoft.Extensions.Options.Options.Create(new Application.Common.DispatchSettings()),
             NullLogger<Infrastructure.Services.DispatchService>.Instance);
 
@@ -258,4 +259,9 @@ public class StubPricingService : IPricingService
     private PriceBreakdown Build(decimal serviceFee)
         => new(serviceFee, 0.10m, serviceFee * 0.10m, serviceFee * 1.10m,
                0.15m, serviceFee * 0.15m, _providerEarning, "EGP");
+}
+
+public sealed class PassthroughImageUrlResolver : IImageUrlResolver
+{
+    public string? Resolve(string? path) => path;
 }

@@ -2,6 +2,7 @@ using Application.DTOs.Admin;
 using KHDMA.Application.DTOs.Admin;
 using Domain.Common;
 using KHDMA.Application.Interfaces.Repositories;
+using KHDMA.Application.Interfaces.Services;
 using KHDMA.Application.Interfaces.Services.Admin;
 using KHDMA.Domain.Entities;
 using KHDMA.Domain.Enums;
@@ -11,10 +12,12 @@ namespace Application.Services.Admin;
 public class AdminProviderService : IAdminProviderService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IImageUrlResolver _imageUrlResolver;
 
-    public AdminProviderService(IUnitOfWork unitOfWork)
+    public AdminProviderService(IUnitOfWork unitOfWork, IImageUrlResolver imageUrlResolver)
     {
         _unitOfWork = unitOfWork;
+        _imageUrlResolver = imageUrlResolver;
     }
 
     public async Task<PagedResponse<ProviderApplicationDto>> GetPendingApplicationsAsync(
@@ -111,7 +114,7 @@ public class AdminProviderService : IAdminProviderService
                 FullName = u.FullName,
                 Email = u.Email,
                 Phone = u.PhoneNumber,
-                ProfilePhotoUrl = u.ProfilePictureUrl,
+                ProfilePhotoUrl = _imageUrlResolver.Resolve(u.ProfilePictureUrl),
                 Status = u.Status,
                 ProviderState = u.Provider!.State,
                 AvailabilityStatus = u.Provider.AvailabilityStatus,
@@ -143,7 +146,7 @@ public class AdminProviderService : IAdminProviderService
             FullName = u.FullName,
             Email = u.Email,
             Phone = u.PhoneNumber,
-            ProfilePhotoUrl = u.ProfilePictureUrl,
+            ProfilePhotoUrl = _imageUrlResolver.Resolve(u.ProfilePictureUrl),
             Status = u.Status,
             ProviderState = u.Provider!.State,
             AvailabilityStatus = u.Provider.AvailabilityStatus,

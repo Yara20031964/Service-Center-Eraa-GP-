@@ -280,7 +280,8 @@ namespace KHDMA.Infrastructure.Services
                 RefreshToken = refreshToken.Token,
                 ExpiresAt = token.ValidTo,
                 Role = user.Role.ToString(),
-                UserName = user.FullName
+                UserName = user.FullName,
+                UserId = user.Id
             });
         }
 
